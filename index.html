@@ -469,16 +469,18 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
   if(playing&&!R.p.dead){const hf=Math.max(0,R.heat/R.heatMax),fl=1+.05*Math.sin(t*23);L(R.p.x+11,R.p.y+14,(120+140*hf)*fl,1);L(R.p.x+11,R.p.y+14,70,1)}
   lctx.globalAlpha=1;lctx.globalCompositeOperation='source-over';
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(lightCvs,0,0);ctx.restore()}
-/* Ash: a mark everywhere you have died on this level */
-function drawAsh(g,ash,camX,t){for(const a of ash){if(a.x<camX-20||a.x>camX+viewW+20)continue;g.fillStyle='rgba(30,24,21,.8)';g.beginPath();g.ellipse(a.x,a.y,8,3,0,0,7);g.fill();
-  g.fillStyle='rgba(70,60,55,.7)';g.fillRect(a.x-3,a.y-2,2,2);g.fillRect(a.x+2,a.y-1,2,1.5);g.fillStyle=`rgba(255,106,26,${.25+.25*Math.sin(t*2+a.x)})`;g.fillRect(a.x,a.y-1,1.5,1.5)}}
 
 /* ---------------- Audio ---------------- */
 let AC=null,muted=store.get('tf-mute',false);
 function ensureAudio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});if(AC&&typeof Music!=='undefined')Music.start()}
 function tone(f1,f2,dur,type,vol=.06,delay=0){if(!AC||muted)return;const t0=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f1,t0);o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.02)}
 function hiss(dur,vol=.05){if(!AC||muted)return;const n=AC.sampleRate*dur,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=2500;g.gain.value=vol;s.buffer=b;s.connect(f).connect(g).connect(AC.destination);s.start()}
-const SFX={jump:()=>tone(300,560,.1,'triangle',.06),wall:()=>tone(260,620,.11,'triangle',.06),spring:()=>{hiss(.35,.08);tone(140,420,.2,'sawtooth',.03)},die:()=>{hiss(.4,.09);tone(320,50,.35,'sawtooth',.05)},
+function whoomp(k=1){if(!AC||muted)return;const t0=AC.currentTime;
+  const o=AC.createOscillator(),v=AC.createGain(),lp=AC.createBiquadFilter();o.type='triangle';o.frequency.setValueAtTime(190*k,t0);o.frequency.exponentialRampToValueAtTime(520*k,t0+.09);lp.type='lowpass';lp.frequency.value=2200;
+  v.gain.setValueAtTime(0,t0);v.gain.linearRampToValueAtTime(.16,t0+.008);v.gain.exponentialRampToValueAtTime(.0001,t0+.16);o.connect(lp).connect(v).connect(AC.destination);o.start(t0);o.stop(t0+.18);
+  const n=Math.floor(AC.sampleRate*.14),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const sr=AC.createBufferSource(),bp=AC.createBiquadFilter(),ng=AC.createGain();sr.buffer=b;bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueAtTime(600*k,t0);bp.frequency.exponentialRampToValueAtTime(2400*k,t0+.12);ng.gain.value=.11;sr.connect(bp).connect(ng).connect(AC.destination);sr.start(t0)}
+const SFX={jump:()=>whoomp(1),wall:()=>whoomp(1.25),spring:()=>{hiss(.35,.08);tone(140,420,.2,'sawtooth',.03)},die:()=>{hiss(.4,.09);tone(320,50,.35,'sawtooth',.05)},
   gem:()=>{tone(660,990,.08,'triangle',.07);tone(990,1320,.1,'triangle',.05,.06)},check:()=>{hiss(.16,.022);tone(784,790,.5,'sine',.05);tone(1175,1180,.6,'sine',.034,.07);tone(1568,1575,.75,'sine',.022,.14)},
   win:()=>[392,523,659,784,1046].forEach((f,i)=>tone(f,f,.22,'square',.045,i*.1)),crumble:()=>{hiss(.18,.06);tone(120,60,.16,'triangle',.06)},
   hammer:()=>{tone(95,38,.28,'sine',.13);hiss(.07,.04);tone(560,540,.5,'triangle',.018)}};
@@ -542,6 +544,7 @@ function updateMusicBtn(){const b=$('#mMusic');if(b)b.textContent='Music: '+(Mus
 
 /* ---------------- Death pride ---------------- */
 const pride=store.get('tf3-pride',{total:0,per:{}});
+try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('tf3-ash-'))localStorage.removeItem(k)}}catch(e){}
 function addDeath(id){pride.total++;pride.per[id]=(pride.per[id]||0)+1;store.set('tf3-pride',pride)}
 const rankFor=d=>d===0?'Flawless':d<10?'Tempered':d<50?'Scarred':d<200?'Ironwilled':'Forged in agony';
 
@@ -555,7 +558,7 @@ function makeFx(V){
     dust:(x,y,n=6)=>{for(let i=0;i<n;i++)V.parts.push({x:x+(Math.random()-.5)*14,y,vx:(Math.random()-.5)*2,vy:-Math.random()*1.4,life:18,max:18,c:i%2?'#ffb347':'#ff6a1a',s:2.5,g:-.02})},
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
-      if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id);V.ash.push({x:Math.round(p.x+p.w/2),y:Math.round(Math.min(p.y+p.h-3,VH-23))});if(V.ash.length>300)V.ash.shift();store.set('tf3-ash-'+id,V.ash)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
+      if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
       if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
     spring:(R,i)=>{V.springAnim.set(i,14);SFX.spring()},
@@ -910,7 +913,7 @@ function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden
   if(s!=='play')$('#hint').hidden=true;
   input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();padUpdate();if(s==='menu')renderMenu()}
 function startLevel(i,replay){closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(i+1);Music.duck(false);
-  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null,ash:replay?[]:store.get('tf3-ash-'+L.id,[])};
+  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
   V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});V.cam.x=camTarget();
   $('#hudName').textContent=`${i+1} · ${L.name}`;$('#hudName').style.color=THEMES[i].acc;$('#replayTag').hidden=!replay;
   showHint(replay?'Watching the recorded clear. Every input in it is one you can make.':(isTouch&&i===0?'Put your left thumb <b>anywhere</b> on the left half and slide to move. ':'')+L.intro,7500);
@@ -995,7 +998,6 @@ function render(t){
     const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(c==='G'||c==='^'&&ty===ROWS-1){late.push([c,tx,ty]);continue}drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env)}
   drawMovers(ctx,R.movers,clock,t);
   for(const[c,tx,ty]of late)drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env);
-  if(playing&&V.ash.length)drawAsh(ctx,V.ash,camX,t);
   if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,R.p,t,R.heat/R.heatMax);
   ctx.restore();
   drawDark(R,env,camX,sx,sy,th,playing,t);
