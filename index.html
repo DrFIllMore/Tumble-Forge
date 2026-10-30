@@ -114,6 +114,10 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- Modal / rotate ---------- */
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));z-index:20}
+#modal.peek{background:rgba(6,4,3,.12);place-items:start center}
+#modal.peek #modalCard{background:rgba(26,17,13,.93)}
+.zrange{width:100%;accent-color:var(--glow);height:34px}
+.zread{font-variant-numeric:tabular-nums}
 #modalCard{width:min(520px,100%);max-height:calc(100% - 8px);overflow-y:auto;touch-action:pan-y;background:linear-gradient(180deg,#2a1d17,#1a110d);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 20px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,200,160,.08)}
 #modalCard h3{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;line-height:1;text-wrap:balance;letter-spacing:.02em}
 #modalCard h3.win{color:var(--glow)}
@@ -145,6 +149,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
         <button class="btn" id="mPlay">Ignite</button>
         <button class="btn ghost sm" id="mMute" aria-label="Toggle sound effects">Sound: on</button>
         <button class="btn ghost sm" id="mMusic" aria-label="Toggle music">Music: on</button>
+        <button class="btn ghost sm" id="mView">View size</button>
       </div>
       <p class="keys">Keyboard: ← → move · Space jump (hold for height) · Esc pause · R restart</p>
     </div>
@@ -347,6 +352,34 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const BUILD='2026-10-30 v15';
+/* ---------------- Game log ----------------
+   Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
+   braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
+   when the page runs inside Claude with its database, synced to the "logs" collection so it can be read back. */
+const LOG=(()=>{
+  const sid=Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0=performance.now(),PART=400;
+  const scr=window.screen||{};
+  const meta={sid,build:BUILD,started:new Date().toISOString(),ua:navigator.userAgent,screen:`${scr.width}x${scr.height}`,
+    standalone:!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches),touch:('ontouchstart' in window)};
+  const cur={meta,entries:[]};let past=store.get('tf-log',[]);if(!Array.isArray(past))past=[];past=past.slice(-5);
+  let db=null,part=0,dirty=false,busy=false,timer=null,state='device';
+  function saveLocal(){store.set('tf-log',past.concat([cur]))}
+  function schedule(ms){if(!db)return;if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;flush()},ms)}
+  function flush(){if(!db||busy||!dirty)return;busy=true;dirty=false;const p=part,slice=cur.entries.slice(p*PART,(p+1)*PART),full=slice.length>=PART&&cur.entries.length>(p+1)*PART;
+    db.collection('logs').doc(sid+'-'+p).set({meta,part:p,count:slice.length,updated:new Date().toISOString(),entries:slice})
+      .then(()=>{busy=false;state='synced';if(full){part++;dirty=true}if(dirty)schedule(400)})
+      .catch(e=>{busy=false;dirty=true;state='device';if(e&&(e.code==='unavailable'||e.code==='resource_exhausted'))schedule(8000);else db=null})}
+  function add(e,data,urgent){const r=Object.assign({t:Math.round(performance.now()-t0)/1000,e},data||{});cur.entries.push(r);
+    if(cur.entries.length>3000)cur.entries.splice(0,cur.entries.length-3000);saveLocal();dirty=true;schedule(urgent?300:6000)}
+  try{if(window.claude&&claude.use)claude.use('db').then(d=>{if(d){db=d;dirty=true;schedule(500)}}).catch(()=>{})}catch(e){}
+  addEventListener('error',ev=>add('error',{msg:String(ev.message||ev.error||'error').slice(0,300),line:ev.lineno,col:ev.colno,stack:ev.error&&ev.error.stack?String(ev.error.stack).slice(0,600):undefined},true));
+  addEventListener('unhandledrejection',ev=>add('error',{msg:'promise: '+String(ev.reason&&ev.reason.message||ev.reason).slice(0,300)},true));
+  document.addEventListener('visibilitychange',()=>{add(document.hidden?'hidden':'shown');if(document.hidden)flush()});
+  const fmt=r=>{const{t,e,...o}=r;return t.toFixed(2).padStart(8)+'s  '+e.padEnd(8)+' '+Object.entries(o).map(([k,v])=>k+'='+(typeof v==='object'?JSON.stringify(v):v)).join(' ')};
+  function text(){const all=past.concat([cur]);return all.map(x=>['# session '+x.meta.sid+' · '+x.meta.started+' · build '+x.meta.build,'# '+x.meta.ua,'# screen '+x.meta.screen+(x.meta.standalone?' · home screen app':'')].concat(x.entries.map(fmt)).join('\n')).join('\n\n')}
+  return{add,flush,text,status:()=>state,sid};
+})();
 function h(tag,props={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(v==null)continue;if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v)}for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e}
 const fmtTime=f=>{const s=f/60;const m=Math.floor(s/60);return m+':'+(s%60).toFixed(1).padStart(4,'0')};
 const K=PROOF.k||3;
@@ -354,8 +387,15 @@ function decodeProof(s){const out=[];let n='';for(const ch of s||''){if(ch>='0'&
 
 /* ---------------- Canvas ---------------- */
 const cvs=$('#game'),ctx=cvs.getContext('2d');
-let dpr=1,scale=1,viewW=800;
-function resize(){dpr=Math.min(window.devicePixelRatio||1,2.5);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);scale=hh/VH;viewW=w/scale}
+let dpr=1,scale=1,viewW=800,baseScale=1,baseW=800,viewH=VH,zoom=1;
+// View size: 100% shows all 15 rows of the level; larger values zoom in and the camera follows Ember up and down.
+// Short screens (a phone held sideways) start zoomed in; the player's own choice is remembered per device.
+let zoomSet=store.get('tf-zoom',null);
+function defaultZoom(){return innerHeight<520?1.4:1}
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2.5);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
+  zoom=zoomSet!=null?zoomSet:defaultZoom();baseScale=hh/VH;baseW=w/baseScale;scale=baseScale*zoom;viewW=w/scale;viewH=hh/scale}
+function setZoom(z){zoomSet=Math.max(1,Math.min(2,z));store.set('tf-zoom',zoomSet);resize()}
+let resizeLogT=null;addEventListener('resize',()=>{clearTimeout(resizeLogT);resizeLogT=setTimeout(()=>LOG.add('resize',{w:innerWidth,h:innerHeight,zoom:Math.round(zoom*100)}),600)});
 addEventListener('resize',resize);resize();
 function rr(g,x,y,w,hh,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+hh,r);g.arcTo(x+w,y+hh,x,y+hh,r);g.arcTo(x,y+hh,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
 const hash=(x,y)=>((x*73856093)^(y*19349663))>>>0;
@@ -935,8 +975,8 @@ function start(level,stats,sound){STATS=stats;const[e,u]=MAP[level];cur=ENDINGS[
 function stop(){if(bus&&AC){const old=bus;old.gain.setTargetAtTime(0,AC.currentTime,.25);setTimeout(()=>old.disconnect(),1500);bus=null}cur=null}
 // returns 0 while playing, 1 once it can be dismissed, 2 when it should hand off on its own
 function draw(now){if(!cur)return 2;const dt=Math.min(.05,(now-lastT)/1000);lastT=now;const t=now/1000,el=(now-startT)/1000,u=el+u0;
-  const fs=Math.min(1,viewW/W),k=dpr*scale*fs;K=k;BX=(viewW-W*fs)/2*dpr*scale;BY=(VH-H*fs)/2*dpr*scale;
-  g.setTransform(dpr*scale,0,0,dpr*scale,0,0);g.fillStyle='#000';g.fillRect(-2,-2,viewW+4,VH+4);
+  const fs=Math.min(1,baseW/W),k=dpr*baseScale*fs;K=k;BX=(baseW-W*fs)/2*dpr*baseScale;BY=(VH-H*fs)/2*dpr*baseScale;
+  g.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);g.fillStyle='#000';g.fillRect(-2,-2,baseW+4,VH+4);
   g.setTransform(k,0,0,k,BX,BY);g.save();g.beginPath();g.rect(0,0,W,H);g.clip();stepParts(dt);
   if(state.shake>0){state.shake*=.88;g.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake)}
   cur.draw.call(state,u,t,dt);
@@ -956,22 +996,25 @@ function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden
   if(s!=='play')$('#hint').hidden=true;
   input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();padUpdate();if(s==='menu')renderMenu()}
 function startLevel(i,replay){closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(L.world+1);Music.duck(false);
-  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
-  V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});V.cam.x=camTarget();
+  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0,y:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
+  V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});LOG.add('start',{lv:L.code,replay:replay?1:undefined,zoom:Math.round(zoom*100)});V.cam.x=camTarget();V.cam.y=camTargetY();
   $('#hudName').textContent=`${L.code} · ${L.name}`;$('#hudName').style.color=THEMES[L.world].acc;$('#replayTag').hidden=!replay;
   showHint(replay?'Watching the Forgemaster. Every input in this run is one you can make.':(isTouch&&i===0?'Put your left thumb <b>anywhere</b> on the left half and slide to move. ':'')+L.intro,7500);
   setScreen('play')}
 // Keep the spark just left of center at all times (never pinned into a corner under a thumb), looking a little ahead
 function camTarget(){const p=V.R.p;return p.x+p.w/2-viewW*.45+p.face*28}
-function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.R;
+function camTargetY(){const p=V.R.p;return Math.max(0,Math.min(VH-viewH,p.y+p.h/2-viewH*.5))}
+function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.R;if(!pause.quiet)LOG.add('pause',Object.assign({lv:LEVELS[V.idx].code,clk:R.clock,deaths:R.deaths},perfInfo()));pause.quiet=false;
   modal(c=>{c.append(h('h3',{text:'Paused'}),h('p',{text:`${R.name} · ${R.deaths} deaths · ${fmtTime(R.clock)}`}),
     h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),V.replay?null:h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx,false)},'Restart'),
-      h('button',{class:'btn ghost',onclick:()=>{closeModal();V=null;Music.duck(false);setScreen('menu')}},'Quit'),
+      h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Quit'),
+      h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
       h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off'))))})}
 function resume(){closeModal();if(V)V.paused=false;Music.duck(false)}
 $('#pauseBtn').addEventListener('click',()=>V&&(V.paused?resume():pause()));
 document.addEventListener('visibilitychange',()=>{Music.hide(document.hidden);if(document.hidden&&screen==='play'&&V&&!V.R.won&&!V.paused)pause()});
-function onWin(){const R=V.R,i=V.idx,L=LEVELS[i],rep=!!V.replay;
+function perfInfo(){const P=V&&V.perf;return P&&P.n?{fps:Math.round(P.n/P.sum),slowFrames:P.slow}:{}}
+function onWin(){const R=V.R,i=V.idx,L=LEVELS[i],rep=!!V.replay;if(!rep)LOG.add('clear',Object.assign({lv:L.code,time:(R.clock/60).toFixed(2),deaths:R.deaths,coal:R.gems+'/'+R.gemsTotal,gold:R.clock<=goldFrames(L)?1:0},perfInfo()),true);
   if(!rep){const got={i:true,s:R.gems>=R.gemsTotal,g:R.clock<=goldFrames(L)},m=medals[L.id]||{},fresh=[];for(const k of['i','s','g'])if(got[k]&&!m[k]){m[k]=1;fresh.push(k)}medals[L.id]=m;store.set('tf3-medals',medals);V.medalResult={has:m,fresh}}
   if(!rep){const b=best[L.id]||{};if(!b.t||R.clock<b.t)b.t=R.clock;if(b.d==null||R.deaths<b.d)b.d=R.deaths;best[L.id]=b;store.set('tf3-best',best);cleared[L.id]=true;store.set('tf3-cleared',cleared)}
   const nxt=i<LEVELS.length-1?i+1:null;
@@ -999,7 +1042,18 @@ function medalRow(L,R){const M=V.medalResult||{has:{},fresh:[]};
   return h('div',{class:'medal-row'},...[['i','Iron','Clear the level'],['s','Steel',R.gemsTotal?`All ${R.gemsTotal} coal in one run`:'No coal in this level'],['g','Gold',`Under ${fmtTime(goldFrames(L))} \u00b7 Forgemaster ${fmtTime(L.fm)}`]].map(([k,n,d])=>
     h('div',{class:'mcard'+(M.fresh.includes(k)?' new':'')},h('span',{class:`medal ${k}${M.has[k]?' on':''}`}),h('b',{},n,M.fresh.includes(k)?h('span',{class:'newtag',text:'NEW'}):null),h('small',{text:d}))))}
 function modal(build){const card=$('#modalCard');card.innerHTML='';build(card);$('#modal').hidden=false;const f=card.querySelector('button');if(f&&!isTouch)f.focus({preventScroll:true});card.scrollTop=0}
-function closeModal(){$('#modal').hidden=true}
+function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('peek')}
+// View size panel: the game stays visible behind it, so the change can be judged live on the real screen
+function viewSize(back){modal(c=>{$('#modal').classList.add('peek');
+  const read=h('p',{class:'zread'}),note=h('p',{class:'zread'});
+  const sl=h('input',{type:'range',class:'zrange',min:'100',max:'200',step:'5',value:String(Math.round(zoom*100)),'aria-label':'View size'});
+  const upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${innerWidth}×${innerHeight}`;
+    note.textContent='Game log: '+(LOG.status()==='synced'?'saved and synced':'saved on this device')};
+  sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});upd();
+  c.append(h('h3',{text:'View size'}),h('p',{text:'Slide until Ember and the platforms feel the right size on this screen.'}),sl,read,
+    h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),w:innerWidth,h:innerHeight},true);closeModal();if(back)back()}},'Done'),
+      h('button',{class:'btn ghost',onclick:()=>{zoomSet=null;store.set('tf-zoom',null);resize();upd()}},'Reset'),
+      h('button',{class:'btn ghost',onclick:async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(LOG.text());b.textContent='Log copied'}catch(err){const ta=h('textarea',{readonly:'',style:'width:100%;height:120px;font-size:11px'});ta.value=LOG.text();c.append(ta);ta.select();b.textContent='Select and copy below'}}},'Copy game log')),note)})}
 
 /* ---------------- Menu ---------------- */
 function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
@@ -1018,6 +1072,7 @@ $('#mPlay').addEventListener('click',()=>{let i=LEVELS.findIndex((L,k)=>unlocked
 $('#mMute').addEventListener('click',()=>{muted=!muted;store.set('tf-mute',muted);updateMuteBtn();ensureAudio();SFX.gem()});
 updateMuteBtn();
 $('#mMusic').addEventListener('click',()=>{Music.toggle();updateMusicBtn()});updateMusicBtn();
+$('#mView').addEventListener('click',()=>viewSize());
 
 /* ---------------- Loop ---------------- */
 function tick(){if(!V||V.paused)return;const R=V.R;
@@ -1030,24 +1085,28 @@ function tick(){if(!V||V.paused)return;const R=V.R;
   let inp;
   if(V.replay){const a=V.replay[Math.floor(V.rf/K)];V.rf++;const[d,hd]=a==null?[0,0]:ACTS[a];inp={dir:d,held:!!hd,pressed:!!hd&&!V.prevHeld};V.prevHeld=!!hd}
   else{const dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
-  const res=step(R,inp);
+  const g0=R.gems,c0=R.check,res=step(R,inp);
+  if(!V.replay){const lv=LEVELS[V.idx].code;
+    if(res==='dead'){V.att=(V.att||1)+1;LOG.add('death',{lv,why:R.lastDeath,tx:Math.floor((R.p.x+R.p.w/2)/TS),ty:Math.floor((R.p.y+R.p.h/2)/TS),vy:+R.p.vy.toFixed(1),heat:Math.round(100*Math.max(0,R.heat)/R.heatMax),clk:R.clock})}
+    if(R.gems>g0)LOG.add('coal',{lv,n:R.gems+'/'+R.gemsTotal,clk:R.clock});
+    if(R.check!==c0&&R.check)LOG.add('brazier',{lv,tx:R.check.x,clk:R.clock,deaths:R.deaths})}
   if(res==='win')onWin();
   if(R.hasTimed&&R.clock%60===0&&!R.won){SFX.hammer();V.shake=Math.max(V.shake,reduceMotion?0:3)}
-  if(!R.p.dead){const tg=camTarget();V.cam.x+=(tg-V.cam.x)*.12;if(R.clock%3===0&&Math.random()<.12+.6*R.heat/R.heatMax)V.parts.push({x:R.p.x+R.p.w/2+(Math.random()-.5)*8,y:R.p.y+8,vx:(Math.random()-.5)*.6-R.p.vx*.1,vy:-.6-Math.random(),life:22,max:22,c:Math.random()<.5?'#ffd27a':'#ff6a1a',s:2,g:-.01})}
+  if(!R.p.dead){const tg=camTarget();V.cam.x+=(tg-V.cam.x)*.12;V.cam.y+=(camTargetY()-V.cam.y)*.12;if(R.clock%3===0&&Math.random()<.12+.6*R.heat/R.heatMax)V.parts.push({x:R.p.x+R.p.w/2+(Math.random()-.5)*8,y:R.p.y+8,vx:(Math.random()-.5)*.6-R.p.vx*.1,vy:-.6-Math.random(),life:22,max:22,c:Math.random()<.5?'#ffd27a':'#ff6a1a',s:2,g:-.01})}
 }
 const attract=makeRun(LEVELS[2].build(),{});
 const hudCache={};function setHud(id,v){if(hudCache[id]!==v){hudCache[id]=v;$('#'+id).textContent=v}}
 function render(t){
   if(screen==='play'&&V&&V.ending){if(Ending.draw(performance.now())===2)finishEnding();return}
   ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
-  const playing=screen==='play'&&V;let R,camX,clock;
-  if(playing){R=V.R;camX=V.cam.x;clock=R.clock}
-  else{R=attract;clock=Math.floor(t*60);camX=(Math.sin(t*.03-1.2)*.5+.5)*(R.w*TS-viewW)}
+  const playing=screen==='play'&&V;let R,camX,camY,clock;
+  if(playing){R=V.R;camX=V.cam.x;clock=R.clock;camY=Math.max(0,Math.min(VH-viewH,V.cam.y))}
+  else{R=attract;clock=Math.floor(t*60);camX=(Math.sin(t*.03-1.2)*.5+.5)*(R.w*TS-viewW);camY=VH-viewH}
   const th=THEMES[playing?LEVELS[V.idx].world:2];
   const env={grid:R.grid,w:R.w,crumb:R.crumb,springAnim:playing?V.springAnim:null,check:R.check,t,clock};
   let sx=0,sy=0;if(playing&&V.shake>0){sx=(Math.random()-.5)*V.shake;sy=(Math.random()-.5)*V.shake}
-  drawBg(ctx,camX,t,th,clock,R.hasTimed);
-  ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round(sy*k)/k;ctx.translate(ox,oy);
+  {const vw=viewW;viewW=baseW;ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);drawBg(ctx,camX,t,th,clock,R.hasTimed);viewW=vw;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0)}
+  ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round((-camY+sy)*k)/k;ctx.translate(ox,oy);
   const x0=Math.floor(camX/TS)-2,x1=Math.ceil((camX+viewW)/TS)+2;const late=[];
   for(let ty=0;ty<ROWS;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=env.w){drawWall(ctx,tx*TS,ty*TS,tx,ty,env.w);continue}
     const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(c==='G'||c==='^'&&ty===ROWS-1){late.push([c,tx,ty]);continue}drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env)}
@@ -1055,7 +1114,7 @@ function render(t){
   for(const[c,tx,ty]of late)drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env);
   if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,R.p,t,R.heat/R.heatMax);
   ctx.restore();
-  drawDark(R,env,camX,sx,sy,th,playing,t);
+  drawDark(R,env,camX,sx,sy-camY,th,playing,t);
   if(playing){ctx.save();ctx.translate(ox,oy);
     for(const q of V.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.c;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s)}ctx.globalAlpha=1;ctx.restore();
     if(V.flash&&V.flash.a>.01){ctx.fillStyle=`rgba(${V.flash.c},${V.flash.a})`;ctx.fillRect(-2,-2,viewW+4,VH+4)}
@@ -1064,9 +1123,11 @@ function render(t){
 }
 let last=performance.now(),acc=0;
 function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;acc+=dt*(screen==='play'&&V&&V.slow>0?.45:1);
-  while(acc>=1/60){if(screen==='play')tick();acc-=1/60}
-  render(now/1000);requestAnimationFrame(frame)}
+  try{while(acc>=1/60){if(screen==='play')tick();acc-=1/60}render(now/1000)}catch(e){acc=0;if(!frame.errs||frame.errs<5){frame.errs=(frame.errs||0)+1;LOG.add('error',{msg:String(e&&e.message||e).slice(0,300),where:'frame',stack:e&&e.stack?String(e.stack).slice(0,600):undefined},true)}}
+  if(screen==='play'&&V&&!V.paused&&!V.ending){const P=V.perf||(V.perf={n:0,sum:0,slow:0});P.n++;P.sum+=dt;if(dt>.034)P.slow++}
+  requestAnimationFrame(frame)}
 setScreen('menu');requestAnimationFrame(frame);
+LOG.add('boot',{w:innerWidth,h:innerHeight,dpr:window.devicePixelRatio||1,zoom:Math.round(zoom*100),touch:isTouch?1:0});
 })();
 </script>
 
