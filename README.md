@@ -2,7 +2,7 @@
 
 A brutal five-level platformer for iPhone (played in landscape). You are **Ember**, a spark loose in a foundry, and you are cooling down. Light braziers and grab coal to keep your heat up, then reach the furnace at the end.
 
-**Play:** https://drfillmore.github.io/tumble-forge/
+**Play:** https://drfillmore.github.io/Tumble-Forge/
 
 ## Put it on your iPhone like an app
 
