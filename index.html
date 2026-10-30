@@ -479,7 +479,7 @@ function ensureAudio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudi
 function tone(f1,f2,dur,type,vol=.06,delay=0){if(!AC||muted)return;const t0=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f1,t0);o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.02)}
 function hiss(dur,vol=.05){if(!AC||muted)return;const n=AC.sampleRate*dur,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=2500;g.gain.value=vol;s.buffer=b;s.connect(f).connect(g).connect(AC.destination);s.start()}
 const SFX={jump:()=>tone(300,560,.1,'triangle',.06),wall:()=>tone(260,620,.11,'triangle',.06),spring:()=>{hiss(.35,.08);tone(140,420,.2,'sawtooth',.03)},die:()=>{hiss(.4,.09);tone(320,50,.35,'sawtooth',.05)},
-  gem:()=>{tone(660,990,.08,'triangle',.07);tone(990,1320,.1,'triangle',.05,.06)},check:()=>{hiss(.25,.05);tone(392,392,.1,'square',.035);tone(587,587,.14,'square',.035,.1)},
+  gem:()=>{tone(660,990,.08,'triangle',.07);tone(990,1320,.1,'triangle',.05,.06)},check:()=>{hiss(.16,.022);tone(784,790,.5,'sine',.05);tone(1175,1180,.6,'sine',.034,.07);tone(1568,1575,.75,'sine',.022,.14)},
   win:()=>[392,523,659,784,1046].forEach((f,i)=>tone(f,f,.22,'square',.045,i*.1)),crumble:()=>{hiss(.18,.06);tone(120,60,.16,'triangle',.06)},
   hammer:()=>{tone(95,38,.28,'sine',.13);hiss(.07,.04);tone(560,540,.5,'triangle',.018)}};
 function updateMuteBtn(){$('#mMute').textContent='Sound: '+(muted?'off':'on')}
@@ -559,7 +559,7 @@ function makeFx(V){
       if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
     spring:(R,i)=>{V.springAnim.set(i,14);SFX.spring()},
-    check:(R,X,Y)=>{V.flash={c:'255,200,120',a:.38};V.slow=reduceMotion?0:26;SFX.check();burst(X+16,Y+6,16,['#ffd27a','#ff6a1a'],2.5,-.04)},
+    check:(R,X,Y)=>{V.flash={c:'255,200,120',a:.38};SFX.check();burst(X+16,Y+6,16,['#ffd27a','#ff6a1a'],2.5,-.04)},
     gem:(R,x,y)=>{V.flash={c:'255,190,90',a:.1};SFX.gem();burst(x,y,14,['#ffd27a','#ff6a1a'],3,-.02)},
     crumble:(R,i)=>{const tx=i%R.w,ty=(i/R.w)|0;burst(tx*TS+16,ty*TS+16,12,['#4a3a31','#ff6a1a'],2.5,.25);SFX.crumble()},
   }}
