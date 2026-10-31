@@ -365,7 +365,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-10-31 v19';
+const BUILD='2026-10-31 v20';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -693,17 +693,23 @@ addEventListener('keyup',e=>{const k=e.key;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
 addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false});
 const pad=$('#pad'),padPtrs=new Map();const DEAD=12,LEASH=36;
+// Re-grip grace: lifting the move thumb for a moment (to shift it mid-jump) keeps Ember moving the same way for
+// GRACE frames, and a thumb that comes back down inside that window carries on in that direction straight away.
+const GRACE=12;let gDir=0,gLeft=0;
+function padDir(q){const dx=q.x-q.ax;return dx>DEAD?1:dx<-DEAD?-1:0}
+function startGrace(dir){if(dir){gDir=dir;gLeft=GRACE}}
 function padUpdate(){let d=0,last=null;for(const q of padPtrs.values())last=q;if(last){const dx=last.x-last.ax;d=dx>DEAD?1:dx<-DEAD?-1:0}input.tl=d<0;input.tr=d>0}
-pad.addEventListener('pointerdown',e=>{e.preventDefault();try{pad.setPointerCapture(e.pointerId)}catch(_){}padPtrs.delete(e.pointerId);padPtrs.set(e.pointerId,{ax:e.clientX,x:e.clientX});padUpdate()});
+pad.addEventListener('pointerdown',e=>{e.preventDefault();try{pad.setPointerCapture(e.pointerId)}catch(_){}padPtrs.delete(e.pointerId);
+  const carry=gLeft>0&&padPtrs.size===0?gDir:0;padPtrs.set(e.pointerId,{ax:e.clientX-carry*(DEAD+1),x:e.clientX});gLeft=0;padUpdate()});
 pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=e.clientX;const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;padUpdate()});
-['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,e=>{padPtrs.delete(e.pointerId);padUpdate()}));
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,e=>{const q=padPtrs.get(e.pointerId);if(!q)return;padPtrs.delete(e.pointerId);if(padPtrs.size===0)startGrace(padDir(q));padUpdate()}));
 const jb=$('#jumpBtn');
 jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCapture(e.pointerId)}catch(_){}input.tj=true;input.pressed=true;jb.classList.add('on')});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>jb.addEventListener(ev,()=>{input.tj=false;jb.classList.remove('on')}));
 // Safety net for a finger the browser forgets: iOS can swallow the "finger lifted" event (a system swipe, the app's own
 // gesture, a call banner), which used to leave Ember running on his own. When no finger is on the screen at all,
 // every touch control is released, and the log notes it so a stuck input shows up there.
-function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;padPtrs.clear();input.tl=input.tr=input.tj=false;jb.classList.remove('on');
+function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;jb.classList.remove('on');
   if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
 for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0&&(padPtrs.size>0||input.tj))releaseTouch(ev)},{passive:true,capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch('hidden')});
@@ -1024,7 +1030,7 @@ const cleared=store.get('tf3-cleared',{});
 const unlocked=i=>i===0||!!cleared[LEVELS[i].id]||!!cleared[LEVELS[i-1].id];
 function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden=s!=='menu';$('#hud').hidden=s!=='play';$('#controls').hidden=!(s==='play'&&isTouch&&V&&!V.replay);
   if(s!=='play')$('#hint').hidden=true;
-  input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();padUpdate();if(s==='menu')renderMenu()}
+  input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();gLeft=0;padUpdate();if(s==='menu')renderMenu()}
 function startLevel(i,replay){closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(L.world+1);Music.duck(false);
   V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0,y:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
   V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});LOG.add('start',{lv:L.code,replay:replay?1:undefined,zoom:Math.round(zoom*100)});V.cam.x=camTarget();V.cam.y=camTargetY();
@@ -1125,7 +1131,7 @@ function tick(){if(!V||V.paused)return;const R=V.R;
   if(R.won)return;
   let inp;
   if(V.replay){const a=V.replay[Math.floor(V.rf/K)];V.rf++;const[d,hd]=a==null?[0,0]:ACTS[a];inp={dir:d,held:!!hd,pressed:!!hd&&!V.prevHeld};V.prevHeld=!!hd}
-  else{const dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
+  else{let dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);if(gLeft>0){if(!dir&&padPtrs.size===0)dir=gDir;gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
   const g0=R.gems,c0=R.check,res=step(R,inp);
   if(!V.replay){const lv=LEVELS[V.idx].code;
     if(res==='dead'){V.att=(V.att||1)+1;LOG.add('death',{lv,why:R.lastDeath,tx:Math.floor((R.p.x+R.p.w/2)/TS),ty:Math.floor((R.p.y+R.p.h/2)/TS),vy:+R.p.vy.toFixed(1),heat:Math.round(100*Math.max(0,R.heat)/R.heatMax),clk:R.clock})}
