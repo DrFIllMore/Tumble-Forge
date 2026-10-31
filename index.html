@@ -365,7 +365,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-10-31 v18';
+const BUILD='2026-10-31 v19';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -700,6 +700,14 @@ pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)re
 const jb=$('#jumpBtn');
 jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCapture(e.pointerId)}catch(_){}input.tj=true;input.pressed=true;jb.classList.add('on')});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>jb.addEventListener(ev,()=>{input.tj=false;jb.classList.remove('on')}));
+// Safety net for a finger the browser forgets: iOS can swallow the "finger lifted" event (a system swipe, the app's own
+// gesture, a call banner), which used to leave Ember running on his own. When no finger is on the screen at all,
+// every touch control is released, and the log notes it so a stuck input shows up there.
+function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;padPtrs.clear();input.tl=input.tr=input.tj=false;jb.classList.remove('on');
+  if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
+for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0&&(padPtrs.size>0||input.tj))releaseTouch(ev)},{passive:true,capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch('hidden')});
+addEventListener('pagehide',()=>releaseTouch('pagehide'));
 
 
 /* ---------------- Level endings ----------------
