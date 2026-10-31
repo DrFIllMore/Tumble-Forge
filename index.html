@@ -144,6 +144,8 @@ body.adjusting #hint{display:none}
 @keyframes turn{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
 @media (max-width:620px) and (orientation:portrait){#menu{grid-template-columns:1fr;overflow-y:auto;touch-action:pan-y}.panel{overflow:visible}}
+/* short landscape screens (a phone, especially inside an app): tighter menu so every button fits */
+@media (max-height:440px){.logo{font-size:clamp(36px,11vh,64px)}.tag{font-size:14px;line-height:1.3}.pride{font-size:14px}.m-left{gap:8px}.m-actions .btn{padding:8px 12px;font-size:15px}.m-actions .btn.sm{padding:7px 10px;font-size:13px}#buildTag{font-size:11px}}
 @media (prefers-reduced-motion:reduce){#rotate .phone{animation:none;transform:rotate(-90deg)}}
 </style>
 
@@ -162,6 +164,7 @@ body.adjusting #hint{display:none}
         <button class="btn ghost sm" id="mView">View size</button>
       </div>
       <p class="keys">Keyboard: ← → move · Space jump (hold for height) · Esc pause · R restart</p>
+      <p class="keys" id="buildTag" style="display:block;opacity:.6"></p>
     </div>
     <div class="panel">
       <h2>The foundry <span id="progress">0 / 5 cleared</span></h2>
@@ -362,7 +365,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-10-31 v16';
+const BUILD='2026-10-31 v18';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -402,7 +405,7 @@ let dpr=1,scale=1,viewW=800,baseScale=1,baseW=800,viewH=VH,zoom=1;
 // Short screens (a phone held sideways) start zoomed in; the player's own choice is remembered per device.
 let zoomSet=store.get('tf-zoom',null);
 function defaultZoom(){return innerHeight<520?1.4:1}
-function resize(){dpr=Math.min(window.devicePixelRatio||1,2.5);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
   zoom=zoomSet!=null?zoomSet:defaultZoom();baseScale=hh/VH;baseW=w/baseScale;scale=baseScale*zoom;viewW=w/scale;viewH=hh/scale}
 // Screen edges: extra space at the sides and top so the buttons and HUD stay clear of whatever frames the game
 // (the phone's rounded corners, or the app's own close and menu buttons). Stored per device, in CSS pixels.
@@ -544,9 +547,13 @@ function drawSpark(g,p,t,heatFrac){
 const lightCvs=document.createElement('canvas'),lctx=lightCvs.getContext('2d');
 const lightSprite=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);
   gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(.45,'rgba(0,0,0,.8)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return c})();
+// The darkness layer is all soft gradients, so it is drawn at a quarter of the screen's resolution and stretched:
+// it looks the same but costs about a sixteenth as much, which was most of each frame on a phone.
+const LIGHT_RES=.25;
 function drawDark(R,env,camX,sx,sy,th,playing,t){
-  if(lightCvs.width!==cvs.width||lightCvs.height!==cvs.height){lightCvs.width=cvs.width;lightCvs.height=cvs.height}
-  const k=dpr*scale;lctx.globalCompositeOperation='source-over';lctx.globalAlpha=1;lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,lightCvs.width,lightCvs.height);
+  const lw=Math.max(1,Math.round(cvs.width*LIGHT_RES)),lh=Math.max(1,Math.round(cvs.height*LIGHT_RES));
+  if(lightCvs.width!==lw||lightCvs.height!==lh){lightCvs.width=lw;lightCvs.height=lh}
+  const k=dpr*scale*LIGHT_RES;lctx.globalCompositeOperation='source-over';lctx.globalAlpha=1;lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,lightCvs.width,lightCvs.height);
   lctx.fillStyle=`rgba(${th.dark},${playing?th.da:th.da*.7})`;lctx.fillRect(0,0,lightCvs.width,lightCvs.height);
   lctx.globalCompositeOperation='destination-out';lctx.setTransform(k,0,0,k,(-camX+sx)*k,sy*k);
   const L=(x,y,r,a)=>{lctx.globalAlpha=a;lctx.drawImage(lightSprite,x-r,y-r,r*2,r*2)};
@@ -565,7 +572,7 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
   for(const m of R.movers){const q=moverPos(m,env.clock);L(q.x,q.y,54,.65)}
   if(playing&&!R.p.dead){const hf=Math.max(0,R.heat/R.heatMax),fl=1+.05*Math.sin(t*23);L(R.p.x+11,R.p.y+14,(120+140*hf)*fl,1);L(R.p.x+11,R.p.y+14,70,1)}
   lctx.globalAlpha=1;lctx.globalCompositeOperation='source-over';
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(lightCvs,0,0);ctx.restore()}
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lightCvs,0,0,cvs.width,cvs.height);ctx.restore()}
 
 /* ---------------- Audio ---------------- */
 let AC=null,muted=store.get('tf-mute',false);
@@ -1020,7 +1027,7 @@ function startLevel(i,replay){closeModal();if(Ending.active)Ending.stop();Music.
 function camTarget(){const p=V.R.p;return p.x+p.w/2-viewW*.45+p.face*28}
 function camTargetY(){const p=V.R.p;return Math.max(0,Math.min(VH-viewH,p.y+p.h/2-viewH*.5))}
 function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.R;if(!pause.quiet)LOG.add('pause',Object.assign({lv:LEVELS[V.idx].code,clk:R.clock,deaths:R.deaths},perfInfo()));pause.quiet=false;
-  modal(c=>{c.append(h('h3',{text:'Paused'}),h('p',{text:`${R.name} · ${R.deaths} deaths · ${fmtTime(R.clock)}`}),
+  modal(c=>{c.append(h('h3',{text:'Paused'}),h('p',{text:`${R.name} · ${R.deaths} deaths · ${fmtTime(R.clock)} · build ${BUILD.split(' ')[1]}`}),
     h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),V.replay?null:h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx,false)},'Restart'),
       h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Quit'),
       h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
@@ -1098,6 +1105,7 @@ $('#mMute').addEventListener('click',()=>{muted=!muted;store.set('tf-mute',muted
 updateMuteBtn();
 $('#mMusic').addEventListener('click',()=>{Music.toggle();updateMusicBtn()});updateMusicBtn();
 $('#mView').addEventListener('click',()=>viewSize());
+$('#buildTag').textContent='Build '+BUILD.split(' ')[1];
 
 /* ---------------- Loop ---------------- */
 function tick(){if(!V||V.paused)return;const R=V.R;
