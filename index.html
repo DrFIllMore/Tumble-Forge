@@ -114,11 +114,19 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- Modal / rotate ---------- */
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:calc(16px + var(--et,0px)) calc(max(16px,env(safe-area-inset-right,0px)) + var(--ex,0px)) 16px calc(max(16px,env(safe-area-inset-left,0px)) + var(--ex,0px));z-index:20}
-#modal.peek{background:rgba(6,4,3,.12);place-items:start center}
-#modal.peek #modalCard{background:rgba(26,17,13,.93)}
+#modal.peek{background:transparent;place-items:center}
+#modal.peek #modalCard{width:min(400px,100%);background:rgba(26,17,13,.9);padding:10px 14px;gap:6px;transition:opacity .15s}
+#modal.peek #modalCard h3{font-size:20px}
+#modal.peek #modalCard p{font-size:13px}
+#modal.peek .btn{padding:6px 12px;font-size:14px;min-height:0}
+#modal.peek.drag #modalCard{background:transparent;border-color:transparent;box-shadow:none}
+#modal.peek.drag #modalCard>*:not(.zrow.on){visibility:hidden}
+#modal.peek.drag .zrow.on{background:rgba(26,17,13,.85);border-radius:8px;padding:2px 8px}
+
+body.adjusting #hint{display:none}
 .zrange{width:100%;accent-color:var(--glow);height:34px}
 .zread{font-variant-numeric:tabular-nums}
-.zrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:10px}
+.zrow{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:8px;font-size:14px}
 .zrow .zrange{height:28px}
 #modalCard{width:min(520px,100%);max-height:calc(100% - 8px);overflow-y:auto;touch-action:pan-y;background:linear-gradient(180deg,#2a1d17,#1a110d);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 20px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,200,160,.08)}
 #modalCard h3{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;line-height:1;text-wrap:balance;letter-spacing:.02em}
@@ -1049,20 +1057,25 @@ function medalRow(L,R){const M=V.medalResult||{has:{},fresh:[]};
   return h('div',{class:'medal-row'},...[['i','Iron','Clear the level'],['s','Steel',R.gemsTotal?`All ${R.gemsTotal} coal in one run`:'No coal in this level'],['g','Gold',`Under ${fmtTime(goldFrames(L))} \u00b7 Forgemaster ${fmtTime(L.fm)}`]].map(([k,n,d])=>
     h('div',{class:'mcard'+(M.fresh.includes(k)?' new':'')},h('span',{class:`medal ${k}${M.has[k]?' on':''}`}),h('b',{},n,M.fresh.includes(k)?h('span',{class:'newtag',text:'NEW'}):null),h('small',{text:d}))))}
 function modal(build){const card=$('#modalCard');card.innerHTML='';build(card);$('#modal').hidden=false;const f=card.querySelector('button');if(f&&!isTouch)f.focus({preventScroll:true});card.scrollTop=0}
-function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('peek')}
+function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('peek','drag');document.body.classList.remove('adjusting')}
 // View size panel: the game stays visible behind it, so the change can be judged live on the real screen
 function viewSize(back){modal(c=>{$('#modal').classList.add('peek');
   const read=h('p',{class:'zread'}),note=h('p',{class:'zread'});
-  const sl=h('input',{type:'range',class:'zrange',min:'100',max:'200',step:'5',value:String(Math.round(zoom*100)),'aria-label':'View size'});
+  const sl=h('input',{type:'range',class:'zrange',min:'100',max:'200',step:'5',value:String(Math.round(zoom*100)),'aria-label':'View size'}),zl=h('span',{class:'zread'});
   let upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${innerWidth}×${innerHeight}`;
     note.textContent='Game log: '+(LOG.status()==='synced'?'saved and synced':'saved on this device')};
-  sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});
+  sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});const zrow=h('div',{class:'zrow'},zl,sl);
   const mk=(key,label)=>{const r=h('input',{type:'range',class:'zrange',min:'0',max:'80',step:'2',value:String(edges[key]),'aria-label':label}),o=h('span',{class:'zread'});
     const show=()=>{o.textContent=label+': '+edges[key]+' px'};r.addEventListener('input',()=>{edges[key]=+r.value;store.set('tf-edges',edges);applyEdges();show();upd()});show();
     return{row:h('div',{class:'zrow'},o,r),r,show}};
   const ex=mk('x','Side space'),et=mk('t','Top space');
-  const upd0=upd;upd=()=>{upd0();read.innerHTML+=` · sides ${edges.x} px · top ${edges.t} px`};upd();
-  c.append(h('h3',{text:'View size'}),h('p',{text:'Slide until Ember and the platforms feel the right size on this screen. Add side or top space if any button sits under the edges.'}),sl,ex.row,et.row,read,
+  const upd0=upd;upd=()=>{upd0();zl.textContent='Size: '+Math.round(zoom*100)+'%';read.innerHTML=`${Math.round(zoom*100)}% · sides ${edges.x} · top ${edges.t} · Ember ${Math.round(26*scale)} px · ${(viewH/TS).toFixed(1)} rows · ${innerWidth}×${innerHeight}`};upd();
+  // hold a slider: the panel fades out so the whole screen can be judged; let go and it comes back
+  const M=$('#modal');for(const row of[zrow,ex.row,et.row]){const r=row.querySelector('input');
+    const on=()=>{M.classList.add('drag');row.classList.add('on')},off=()=>{M.classList.remove('drag');row.classList.remove('on')};
+    r.addEventListener('pointerdown',on);r.addEventListener('touchstart',on,{passive:true});for(const ev of['pointerup','pointercancel','touchend','touchcancel','change'])r.addEventListener(ev,off)}
+  document.body.classList.add('adjusting');
+  c.append(h('h3',{text:'View size'}),h('p',{text:'Hold a slider and the panel fades so you can see the whole screen.'}),zrow,ex.row,et.row,read,
     h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),side:edges.x,top:edges.t,w:innerWidth,h:innerHeight},true);closeModal();if(back)back()}},'Done'),
       h('button',{class:'btn ghost',onclick:()=>{zoomSet=null;store.set('tf-zoom',null);resize();edges={x:0,t:0};store.set('tf-edges',edges);applyEdges();ex.r.value='0';et.r.value='0';ex.show();et.show();upd()}},'Reset'),
       h('button',{class:'btn ghost',onclick:async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(LOG.text());b.textContent='Log copied'}catch(err){const ta=h('textarea',{readonly:'',style:'width:100%;height:120px;font-size:11px'});ta.value=LOG.text();c.append(ta);ta.select();b.textContent='Select and copy below'}}},'Copy game log')),note)})}
