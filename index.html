@@ -365,7 +365,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-10-31 v20';
+const BUILD='2026-10-31 v21';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -576,7 +576,16 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
 
 /* ---------------- Audio ---------------- */
 let AC=null,muted=store.get('tf-mute',false);
-function ensureAudio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});if(AC&&typeof Music!=='undefined')Music.start()}
+// iPhone audio: (1) "playback" makes the game audible even with the ring/silent switch on silent, which otherwise
+// mutes all web audio; (2) the sound engine only starts inside a tap, and iOS counts touchend/click as a tap but not
+// always pointerdown; (3) after a call or app switch iOS leaves it "interrupted", so every tap tries to wake it;
+// (4) a one-sample silent sound is played on the first tap, which is what finally opens the speaker on older iOS.
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+let audioPrimed=false,audioLogged='';
+function audioState(){const st=AC?AC.state:'none';if(st!==audioLogged){audioLogged=st;if(typeof LOG!=='undefined')LOG.add('audio',{state:st,muted:muted?1:0,session:navigator.audioSession?navigator.audioSession.type:'n/a'})}}
+function ensureAudio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();AC.onstatechange=audioState}catch(e){LOG.add('audio',{error:String(e&&e.message||e).slice(0,200)})}}
+  if(AC&&!audioPrimed){try{const b=AC.createBuffer(1,1,22050),s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start(0);audioPrimed=true}catch(e){}}
+  if(AC&&AC.state!=='running')AC.resume().then(audioState).catch(e=>LOG.add('audio',{error:'resume: '+String(e&&e.message||e).slice(0,200)}));if(AC&&typeof Music!=='undefined')Music.start()}
 function tone(f1,f2,dur,type,vol=.06,delay=0){if(!AC||muted)return;const t0=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f1,t0);o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.02)}
 function hiss(dur,vol=.05){if(!AC||muted)return;const n=AC.sampleRate*dur,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=2500;g.gain.value=vol;s.buffer=b;s.connect(f).connect(g).connect(AC.destination);s.start()}
 function whoomp(k=1){if(!AC||muted)return;const t0=AC.currentTime;
@@ -676,7 +685,7 @@ const input={kl:false,kr:false,kj:false,tl:false,tr:false,tj:false,pressed:false
 let isTouch=matchMedia('(pointer: coarse)').matches||('ontouchstart' in window);
 function applyTouchClass(){document.body.classList.toggle('touch',isTouch)}applyTouchClass();
 addEventListener('touchstart',()=>{if(!isTouch){isTouch=true;applyTouchClass();setScreen(screen)}},{passive:true});
-addEventListener('pointerdown',ensureAudio);
+for(const ev of['pointerdown','touchend','click'])addEventListener(ev,ensureAudio,{capture:true,passive:true});
 addEventListener('contextmenu',e=>e.preventDefault());
 cvs.addEventListener('pointerdown',()=>{if(screen==='play'&&V&&V.ending&&Ending.elapsed>1)finishEnding()});
 addEventListener('keydown',e=>{ensureAudio();const k=e.key;
