@@ -43,7 +43,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- Menu ---------- */
 #menu{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;
-  padding:calc(env(safe-area-inset-top,0px) + 16px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(18px,env(safe-area-inset-left,0px));
+  padding:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 16px) calc(max(18px,env(safe-area-inset-right,0px)) + var(--ex,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) calc(max(18px,env(safe-area-inset-left,0px)) + var(--ex,0px));
   background:linear-gradient(90deg,rgba(13,9,7,.92) 0%,rgba(13,9,7,.55) 55%,rgba(13,9,7,.35) 100%)}
 .m-left{display:flex;flex-direction:column;justify-content:flex-start;gap:12px;min-width:0;overflow-y:auto;touch-action:pan-y}
 .m-left>:first-child{margin-top:auto}.m-left>:last-child{margin-bottom:auto}
@@ -89,7 +89,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- HUD ---------- */
 #hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none;
-  padding:calc(env(safe-area-inset-top,0px) + 10px) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px))}
+  padding:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 10px) calc(max(12px,env(safe-area-inset-right,0px)) + var(--ex,0px)) 0 calc(max(12px,env(safe-area-inset-left,0px)) + var(--ex,0px))}
 .hud-l,.hud-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;pointer-events:auto}
 .hud-r{justify-content:flex-end}
 .icon-btn{width:38px;height:38px;border-radius:6px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-size:16px}
@@ -103,21 +103,23 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 #heatFill{height:100%;width:100%;background:linear-gradient(90deg,#d0420c,#ff8a3a,#ffd27a);transform-origin:left center}
 #heatChip.low #heatFill{background:#ff3b30}
 #heatChip.low{border-color:var(--danger);color:var(--danger)}
-#hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 58px);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:16px;font-weight:600;color:var(--ash);width:max-content;max-width:min(560px,80vw);text-align:center;pointer-events:none;transition:opacity .5s}
+#hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 58px);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:16px;font-weight:600;color:var(--ash);width:max-content;max-width:min(560px,80vw);text-align:center;pointer-events:none;transition:opacity .5s}
 #hint b{color:var(--glow)}
 
 /* ---------- Touch controls ---------- */
 #controls{position:absolute;inset:0;pointer-events:none}
-#pad{position:absolute;pointer-events:auto;left:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:0;width:50%;touch-action:none}
-#jumpBtn{position:absolute;pointer-events:auto;right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,193,94,.55),rgba(255,106,26,.45));border:3px solid var(--molten);font-family:var(--f-display);font-size:20px;color:var(--ash);touch-action:none;text-shadow:0 2px 0 rgba(0,0,0,.45);letter-spacing:.04em}
+#pad{position:absolute;pointer-events:auto;left:0;top:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 56px);bottom:0;width:50%;touch-action:none}
+#jumpBtn{position:absolute;pointer-events:auto;right:calc(calc(env(safe-area-inset-right,0px) + var(--ex,0px)) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,193,94,.55),rgba(255,106,26,.45));border:3px solid var(--molten);font-family:var(--f-display);font-size:20px;color:var(--ash);touch-action:none;text-shadow:0 2px 0 rgba(0,0,0,.45);letter-spacing:.04em}
 #jumpBtn.on{background:radial-gradient(circle at 50% 40%,rgba(255,226,160,.9),rgba(255,106,26,.85));transform:scale(.95)}
 
 /* ---------- Modal / rotate ---------- */
-#modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));z-index:20}
+#modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:calc(16px + var(--et,0px)) calc(max(16px,env(safe-area-inset-right,0px)) + var(--ex,0px)) 16px calc(max(16px,env(safe-area-inset-left,0px)) + var(--ex,0px));z-index:20}
 #modal.peek{background:rgba(6,4,3,.12);place-items:start center}
 #modal.peek #modalCard{background:rgba(26,17,13,.93)}
 .zrange{width:100%;accent-color:var(--glow);height:34px}
 .zread{font-variant-numeric:tabular-nums}
+.zrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:10px}
+.zrow .zrange{height:28px}
 #modalCard{width:min(520px,100%);max-height:calc(100% - 8px);overflow-y:auto;touch-action:pan-y;background:linear-gradient(180deg,#2a1d17,#1a110d);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 20px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,200,160,.08)}
 #modalCard h3{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;line-height:1;text-wrap:balance;letter-spacing:.02em}
 #modalCard h3.win{color:var(--glow)}
@@ -352,7 +354,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-10-30 v15';
+const BUILD='2026-10-31 v16';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -394,6 +396,11 @@ let zoomSet=store.get('tf-zoom',null);
 function defaultZoom(){return innerHeight<520?1.4:1}
 function resize(){dpr=Math.min(window.devicePixelRatio||1,2.5);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
   zoom=zoomSet!=null?zoomSet:defaultZoom();baseScale=hh/VH;baseW=w/baseScale;scale=baseScale*zoom;viewW=w/scale;viewH=hh/scale}
+// Screen edges: extra space at the sides and top so the buttons and HUD stay clear of whatever frames the game
+// (the phone's rounded corners, or the app's own close and menu buttons). Stored per device, in CSS pixels.
+let edges=Object.assign({x:0,t:0},store.get('tf-edges',{}));
+function applyEdges(){const r=document.documentElement.style;r.setProperty('--ex',edges.x+'px');r.setProperty('--et',edges.t+'px')}
+applyEdges();
 function setZoom(z){zoomSet=Math.max(1,Math.min(2,z));store.set('tf-zoom',zoomSet);resize()}
 let resizeLogT=null;addEventListener('resize',()=>{clearTimeout(resizeLogT);resizeLogT=setTimeout(()=>LOG.add('resize',{w:innerWidth,h:innerHeight,zoom:Math.round(zoom*100)}),600)});
 addEventListener('resize',resize);resize();
@@ -1047,12 +1054,17 @@ function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('peek
 function viewSize(back){modal(c=>{$('#modal').classList.add('peek');
   const read=h('p',{class:'zread'}),note=h('p',{class:'zread'});
   const sl=h('input',{type:'range',class:'zrange',min:'100',max:'200',step:'5',value:String(Math.round(zoom*100)),'aria-label':'View size'});
-  const upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${innerWidth}×${innerHeight}`;
+  let upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${innerWidth}×${innerHeight}`;
     note.textContent='Game log: '+(LOG.status()==='synced'?'saved and synced':'saved on this device')};
-  sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});upd();
-  c.append(h('h3',{text:'View size'}),h('p',{text:'Slide until Ember and the platforms feel the right size on this screen.'}),sl,read,
-    h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),w:innerWidth,h:innerHeight},true);closeModal();if(back)back()}},'Done'),
-      h('button',{class:'btn ghost',onclick:()=>{zoomSet=null;store.set('tf-zoom',null);resize();upd()}},'Reset'),
+  sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});
+  const mk=(key,label)=>{const r=h('input',{type:'range',class:'zrange',min:'0',max:'80',step:'2',value:String(edges[key]),'aria-label':label}),o=h('span',{class:'zread'});
+    const show=()=>{o.textContent=label+': '+edges[key]+' px'};r.addEventListener('input',()=>{edges[key]=+r.value;store.set('tf-edges',edges);applyEdges();show();upd()});show();
+    return{row:h('div',{class:'zrow'},o,r),r,show}};
+  const ex=mk('x','Side space'),et=mk('t','Top space');
+  const upd0=upd;upd=()=>{upd0();read.innerHTML+=` · sides ${edges.x} px · top ${edges.t} px`};upd();
+  c.append(h('h3',{text:'View size'}),h('p',{text:'Slide until Ember and the platforms feel the right size on this screen. Add side or top space if any button sits under the edges.'}),sl,ex.row,et.row,read,
+    h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),side:edges.x,top:edges.t,w:innerWidth,h:innerHeight},true);closeModal();if(back)back()}},'Done'),
+      h('button',{class:'btn ghost',onclick:()=>{zoomSet=null;store.set('tf-zoom',null);resize();edges={x:0,t:0};store.set('tf-edges',edges);applyEdges();ex.r.value='0';et.r.value='0';ex.show();et.show();upd()}},'Reset'),
       h('button',{class:'btn ghost',onclick:async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(LOG.text());b.textContent='Log copied'}catch(err){const ta=h('textarea',{readonly:'',style:'width:100%;height:120px;font-size:11px'});ta.value=LOG.text();c.append(ta);ta.select();b.textContent='Select and copy below'}}},'Copy game log')),note)})}
 
 /* ---------------- Menu ---------------- */
@@ -1127,7 +1139,7 @@ function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;acc+=dt*(scre
   if(screen==='play'&&V&&!V.paused&&!V.ending){const P=V.perf||(V.perf={n:0,sum:0,slow:0});P.n++;P.sum+=dt;if(dt>.034)P.slow++}
   requestAnimationFrame(frame)}
 setScreen('menu');requestAnimationFrame(frame);
-LOG.add('boot',{w:innerWidth,h:innerHeight,dpr:window.devicePixelRatio||1,zoom:Math.round(zoom*100),touch:isTouch?1:0});
+LOG.add('boot',{w:innerWidth,h:innerHeight,dpr:window.devicePixelRatio||1,zoom:Math.round(zoom*100),side:edges.x,top:edges.t,touch:isTouch?1:0});
 })();
 </script>
 
