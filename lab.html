@@ -1270,6 +1270,8 @@ return{start,stop,draw,get active(){return!!cur},get elapsed(){return cur?(perfo
 let screen='menu',V=null;
 const best=store.get('tflab3-best',{});
 const cleared=store.get('tflab3-cleared',{});
+// 1-1 + 1-2 and 1-3 + 1-4 became one level each: clearing both old halves counts as clearing the new level
+if(cleared.w1a&&cleared.w1b)cleared.w1ab=true;if(cleared.w1c&&cleared.w1d)cleared.w1cd=true;
 // a level is open if it is the first, already cleared, or the one before it is cleared (so earlier progress is never re-locked)
 const unlocked=i=>true||i===0||!!cleared[LEVELS[i].id]||!!cleared[LEVELS[i-1].id];
 function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden=s!=='menu';$('#hud').hidden=s!=='play';$('#controls').hidden=!(s==='play'&&isTouch&&V&&!V.replay);
@@ -1280,7 +1282,6 @@ function startLevel(i,replay){closeModal();if(Ending.active)Ending.stop();Music.
   V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});
   {const seen=store.get('tflab-intro',{});if(!replay&&!seen[L.id]){V.intro={t:0,dur:i===0?300:230,lit:new Set()};seen[L.id]=1;store.set('tflab-intro',seen)}}LOG.add('start',{lv:L.code,replay:replay?1:undefined,zoom:Math.round(zoom*100)});V.cam.x=camTarget();V.cam.y=camTargetY();
   $('#hudName').textContent=`${L.code} · ${L.name}`;$('#hudName').style.color=THEMES[L.world].acc;$('#replayTag').hidden=!replay;
-  showHint(replay?'Watching the Forgemaster. Every input in this run is one you can make.':(isTouch&&i===0?'Put your left thumb <b>anywhere</b> on the left half and slide to move. ':'')+L.intro,7500);
   setScreen('play')}
 // Keep the spark just left of center at all times (never pinned into a corner under a thumb), looking a little ahead
 function camTarget(){const p=V.R.p;return p.x+p.w/2-viewW*.45+p.face*28}

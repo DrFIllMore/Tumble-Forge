@@ -23,7 +23,7 @@ If you hear no music, check the ring/silent switch: iOS mutes web audio while th
 
 | World | Levels | Tuned for |
 |-------|--------|-----------|
-| 1 · Slag Run | 1-1 Cinder Path, 1-2 Heat Haze, 1-3 Low Ceiling, 1-4 Slag Bridges, 1-5 The Chimney, 1-6 Cog Run, 1-7 Slag Run (finale) | Top 5% of players |
+| 1 · Slag Run | 1-1 Cinder Path, 1-2 Slag Bridges, 1-3 The Chimney, 1-4 Cog Run, 1-5 Slag Run (finale) | Top 5% of players |
 | 2 · Bellows | 2-1 Steam Vents, 2-2 Vent Ceiling, 2-3 Rail Cogs, 2-4 Saw Chimney, 2-5 First Beat, 2-6 High Ledges, 2-7 Bellows (finale) | Top 4% of players |
 | 3 · Trip Hammer | 3-1 Trip Hammer | Top 3% |
 | 4 · Quench | 4-1 Quench | Top 2% |
