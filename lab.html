@@ -1249,7 +1249,7 @@ function camTargetY(){const p=V.R.p;return Math.max(0,Math.min(VH-viewH,p.y+p.h/
 function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.R;if(!pause.quiet)LOG.add('pause',Object.assign({lv:LEVELS[V.idx].code,clk:R.clock,deaths:R.deaths},perfInfo()));pause.quiet=false;
   modal(c=>{c.append(h('h3',{text:'Paused'}),h('p',{text:`${R.name} · ${R.deaths} deaths · ${fmtTime(R.clock)} · build ${BUILD.split(' ')[1]}`}),
     h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),V.replay?null:h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx,false)},'Restart'),
-      h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Quit'),
+      h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Title screen'),
       h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
       h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off'))))})}
 function resume(){closeModal();if(V)V.paused=false;Music.duck(false)}
