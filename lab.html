@@ -289,12 +289,12 @@ const LEVELS=[
   build(){return course('Trap Jets',['trapGap','!','trapGap','jetGap','trapGap'])}},
  {id:'lab4',world:0,code:'L-4',heat:3600,fm:517,name:'The Ladle',intro:'A <b>ladle</b> rolls along a rail and pours molten slag on a steady rhythm. It tips just before it pours.',
   build(){return course('The Ladle',['ladleRun','!','ladlePits','ladleRun'])}},
- {id:'lab5',world:0,code:'L-5',heat:3600,fm:479,name:'Hanging Anvils',intro:'<b>Anvils</b> shake and drop when you come near. Keep moving under them. Over a pit, wait for the drop and use the anvil as a step.',
+ {id:'lab5',world:0,code:'L-5',heat:3600,fm:479,name:'Hanging Anvils',intro:'<b>Anvils</b> shake and drop when you come near, rest for two seconds, then shake again and get hauled back up. Keep moving under them. Over a pit, wait for the drop and step across before it lifts.',
   build(){return course('Hanging Anvils',['hookFloor','!','hookPit','hookFloor'])}},
- {id:'lab6',world:0,code:'L-6',heat:3600,fm:396,name:'Fire-Biters',intro:'<b>Fire-biters</b> leap out of the lava on a rhythm and snap at you as they pass. The lava bubbles just before one jumps.',
+ {id:'lab6',world:0,code:'L-6',heat:3600,fm:396,name:'Fire-Biters',intro:'<b>Fire-biters</b> leap out of the lava on a rhythm, jaws chomping all the way up and down. The lava bubbles just before one jumps.',
   build(){return course('Fire-Biters',['lavaCinders','!','lavaCinders'])}},
- {id:'lab7',world:0,code:'L-7',heat:3600,fm:440,name:'Slag Crow',intro:'A <b>slag crow</b> flies back and forth overhead carrying a small crucible. The crucible glows just before it drops a cinder.',
-  build(){return course('Slag Crow',['crowRun','!','crowRun'])}},
+ {id:'lab7',world:0,code:'L-7',heat:3600,fm:440,name:'Slag Balloon',intro:'A patched <b>slag balloon</b> drifts back and forth overhead. Its burner flares just before it drops a cinder from the basket.',
+  build(){return course('Slag Balloon',['crowRun','!','crowRun'])}},
  {id:'lab8',world:0,code:'L-8',heat:3600,fm:699,name:'Hunter Drone',intro:'The <b>hunter drone</b> watches you with one red eye, follows you, and drops a cinder when it is right above you. Its hatch opens and it beeps first. It is slower than you, so keep moving.',
   build(){return course('Hunter Drone',['huntRun','!','huntRun'])}},
  {id:'lab9',world:0,code:'L-9',heat:3600,fm:1423,finale:true,name:'Everything',intro:'Every new hazard in one run. This is how a later finale could feel.',
@@ -381,7 +381,7 @@ function step(R,inp){
  < / >  side jet in a wall, fires sideways on the beat
  D      ladle on an overhead rail, pours slag on a rhythm
  N      hanging anvil: shakes and drops when you come near, then becomes a block
- A      slag crow on a fixed flight path, drops cinders on a rhythm
+ A      slag balloon on a fixed path, drops cinders on a rhythm
  H      hunter drone: follows Ember and drops when lined up
  E      leaping cinder: jumps out of the lava on a rhythm */
 const HZ_CH='JKW<>DNAHE';
@@ -402,7 +402,7 @@ function hzReset(R){const hz=R.hz;hz.drops.length=0;
   for(const j of hz.jets){j.st=0;j.t=0}
   for(const w of hz.crows)if(w.hunt){w.x=w.hx;w.y=w.hy;w.vx=0;w.cd=40;w.warn=0}}
 // after the solver restores a saved hazard state, put landed anvils back into the grid
-function hzSync(R){if(!R.hz)return;for(const i of R.hzN)R.grid[i]='.';for(const h of R.hz.hooks)if(h.st===3)R.grid[h.idx]='n'}
+function hzSync(R){if(!R.hz)return;for(const i of R.hzN)R.grid[i]='.';for(const h of R.hz.hooks)if(h.st===3||h.st===4)R.grid[h.idx]='n'}
 // returns [warning 0..1, flame 0..1]
 function jetHeat(j,clock){
   if(j.trap){if(j.st===1)return[1-j.t/22,0];if(j.st===2){const f=36-j.t;return[0,f<5?f/5:j.t<6?j.t/6:1]}return[0,0]}
@@ -433,8 +433,13 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
     else if(h.st===1){if(--h.t<=0)h.st=2}
     else if(h.st===2){h.vy=Math.min(12,h.vy+.55);h.y+=h.vy;if(hit(hx,hy,hw,hh,h.x-14,h.y-15,28,30))return die(R,'anvil');
       const tx=Math.floor(h.x/TS),ty=Math.floor((h.y+16)/TS),sol=solidAt(R,tx,ty);
-      if(sol||ty>=ROWS-1){const ly=sol?ty-1:ROWS-2;h.st=3;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
-        if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil')}}}
+      if(sol||ty>=ROWS-1){const ly=sol?ty-1:ROWS-2;h.st=3;h.t=120;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
+        if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil')}}
+    else if(h.st===3){if(--h.t<=0){h.st=4;h.t=24;ev('creak',h.x,h.y)}}
+    else if(h.st===4){if(--h.t<=0){h.st=5;R.grid[h.idx]='.';ev('lift',h.x,h.y)}}
+    else if(h.st===5){h.y-=2.5;if(h.y<=h.home){h.y=h.home;h.st=6;h.t=45;h.idx=-1;h.vy=0}}
+    else if(h.st===6){if(--h.t<=0)h.st=0}
+  }
   for(const e of hz.cinders){const q=cinderPos(e,c);if(!q)continue;if(q.f===0)ev('leap',e.x,e.base);if(circHit(q.x,q.y,9,hx,hy,hw,hh))return die(R,'biter')}
   return null}
 const ACTS=[[-1,0],[-1,1],[0,0],[0,1],[1,0],[1,1]];
@@ -586,7 +591,7 @@ function drawTile(g,c,x,y,tx,ty,env){
       g.fillStyle='#ff6a1a';g.beginPath();g.moveTo(bx+4,y+12);g.lineTo(bx+6,y+18);g.lineTo(bx+8,y+12);g.closePath();g.fill()}
     const d=fract(t*.6+hash(tx,ty)%97/97);if(hash(tx,ty)%4===0){g.fillStyle=`rgba(255,160,70,${1-d})`;g.fillRect(x+9,y+18+d*40,2,4)}break}
   case'X':drawCog(g,x+16,y+16,t);break;
-  case'n':drawAnvil(g,x+16,y+16,.25);break;
+  case'n':break;
   case'*':{const bob=Math.sin(t*3+tx)*2.5;g.save();g.translate(x+16,y+17+bob);g.fillStyle='rgba(255,106,26,.22)';g.beginPath();g.arc(0,0,14,0,7);g.fill();
     g.fillStyle='#1b1715';g.beginPath();g.moveTo(-9,2);g.lineTo(-5,-8);g.lineTo(4,-9);g.lineTo(10,-1);g.lineTo(6,8);g.lineTo(-6,8);g.closePath();g.fill();
     g.strokeStyle=`rgba(255,${150+Math.round(60*Math.sin(t*4+tx))},60,1)`;g.lineWidth=1.6;g.beginPath();g.moveTo(-5,-5);g.lineTo(0,0);g.lineTo(6,-4);g.moveTo(0,0);g.lineTo(-2,6);g.stroke();
@@ -633,25 +638,23 @@ function drawLadle(g,d,clock,t){const q=ladlePos(d,clock),ry=d.y-16;
 function drawDrop(g,d){const s=Math.min(2.2,1+d.vy*.13),gr=g.createRadialGradient(d.x,d.y,1,d.x,d.y,d.r+4);
   if(d.k==='slag'){gr.addColorStop(0,'#fffbea');gr.addColorStop(.45,'#ffc15e');gr.addColorStop(1,'rgba(255,106,26,0)')}else{gr.addColorStop(0,'#ffd1b8');gr.addColorStop(.45,'#ff5a2a');gr.addColorStop(1,'rgba(168,30,10,0)')}
   g.fillStyle=gr;g.beginPath();g.ellipse(d.x,d.y-(s-1)*d.r*.7,d.r+2,(d.r+2)*s,0,0,7);g.fill()}
-function drawHook(g,h,t){const ox=h.st===1?Math.sin(t*90)*2.4:0,x=h.x+ox,end=(h.st===2?h.home:h.y)-16;
-  g.strokeStyle='#4a4f58';g.lineWidth=2;for(let cy=-4;cy<end;cy+=8)g.strokeRect(x-2.5,cy,5,7);drawAnvil(g,x,h.y,h.st===1?.95:.35)}
-function drawCrow(g,x,y,t,face,warm){const flap=Math.sin(t*12+x*.01);g.save();g.translate(x,y);g.scale(face,1);
-  // tail feathers
-  g.fillStyle='#5a3424';g.beginPath();g.moveTo(-9,-1);g.lineTo(-22,-5);g.lineTo(-19,0);g.lineTo(-23,4);g.lineTo(-9,3);g.closePath();g.fill();
-  // bellows wings: folded leather with copper ribs, both raised behind the body
-  for(const[w,col,k]of[[[[-2,-4],[-16,-14],[-21,-5],[-6,0]],'#6b3a24',6],[[[2,-4],[-6,-20],[-14,-9],[-2,1]],'#9a5634',9]]){const f=flap*k*.9;
-    const P=w.map(([a,b],i)=>[a,b-(i===1?f:i===2?f*.5:0)]);g.fillStyle=col;g.beginPath();g.moveTo(P[0][0],P[0][1]);for(const q of P.slice(1))g.lineTo(q[0],q[1]);g.closePath();g.fill();
-    g.strokeStyle='#e08a48';g.lineWidth=1.2;for(let r=1;r<4;r++){const u=r/4;g.beginPath();g.moveTo(P[0][0]+(P[3][0]-P[0][0])*u,P[0][1]+(P[3][1]-P[0][1])*u);g.lineTo(P[1][0]+(P[2][0]-P[1][0])*u,P[1][1]+(P[2][1]-P[1][1])*u);g.stroke()}}
-  // body
-  const bg=g.createLinearGradient(0,-8,0,8);bg.addColorStop(0,'#8a4a2a');bg.addColorStop(1,'#3a2018');g.fillStyle=bg;g.beginPath();g.ellipse(0,0,12,8,0,0,7);g.fill();
-  // head + hooked beak
-  g.fillStyle='#6b3a24';g.beginPath();g.arc(10,-4,6,0,7);g.fill();g.fillStyle='#ffb347';g.beginPath();g.moveTo(15,-6);g.lineTo(23,-3);g.lineTo(19,-1);g.lineTo(15,-2);g.closePath();g.fill();
-  g.fillStyle='#fff1c9';g.beginPath();g.arc(12,-6,1.8,0,7);g.fill();g.fillStyle='#2a0d03';g.beginPath();g.arc(12.5,-6,.9,0,7);g.fill();
-  // hanging crucible pouch: glows before each drop
-  g.strokeStyle='#8d95a1';g.lineWidth=1;g.beginPath();g.moveTo(-3,6);g.lineTo(-4,11);g.moveTo(3,6);g.lineTo(4,11);g.stroke();
-  g.fillStyle='#3e434c';g.beginPath();g.moveTo(-6,11);g.lineTo(6,11);g.lineTo(4,17);g.lineTo(-4,17);g.closePath();g.fill();
-  g.fillStyle='rgba(255,'+Math.round(140+90*warm)+',60,'+(.55+.45*warm)+')';g.fillRect(-5,10,10,2.5);
-  if(warm>0){const gr=g.createRadialGradient(0,14,1,0,14,12+8*warm);gr.addColorStop(0,'rgba(255,170,70,'+(.5*warm)+')');gr.addColorStop(1,'rgba(255,120,40,0)');g.fillStyle=gr;g.fillRect(-20,-4,40,36)}
+function drawHook(g,h,t){const sh=h.st===1||h.st===4,ox=sh?Math.sin(t*90)*2.4:0,x=h.x+ox,end=(h.st===2?h.home:h.y)-16;
+  g.strokeStyle='#4a4f58';g.lineWidth=2;for(let cy=-4;cy<end;cy+=8)g.strokeRect(x-2.5,cy,5,7);if(h.st!==2){g.strokeStyle='#8d95a1';g.beginPath();g.arc(x,end+1,4,0,Math.PI);g.stroke()}drawAnvil(g,x,h.y,sh?.95:.35)}
+function drawBalloon(g,x,y,t,warm){g.save();g.translate(x,y);g.rotate(Math.sin(t*1.6+x*.01)*.06);
+  // ropes
+  g.strokeStyle='#8a6a52';g.lineWidth=1;g.beginPath();g.moveTo(-10,-2);g.lineTo(-6,10);g.moveTo(10,-2);g.lineTo(6,10);g.moveTo(-3,0);g.lineTo(-2,10);g.moveTo(3,0);g.lineTo(2,10);g.stroke();
+  // envelope: stitched leather panels lit from the burner below
+  const eg=g.createRadialGradient(0,-4,2,0,-14,22);eg.addColorStop(0,'rgba(255,'+Math.round(150+70*warm)+',80,1)');eg.addColorStop(.35,'#b0522a');eg.addColorStop(1,'#4a2418');
+  g.fillStyle=eg;g.beginPath();g.moveTo(-6,-1);g.bezierCurveTo(-24,-10,-16,-36,0,-36);g.bezierCurveTo(16,-36,24,-10,6,-1);g.closePath();g.fill();
+  g.strokeStyle='rgba(30,12,6,.65)';g.lineWidth=1;for(const k of[-.55,0,.55]){g.beginPath();g.moveTo(k*8,-1);g.quadraticCurveTo(k*26,-20,k*7,-36);g.stroke()}
+  g.fillStyle='#3a2a22';g.fillRect(-9,-24,6,5);g.fillRect(5,-15,5,4);g.strokeStyle='#c8743a';g.strokeRect(-9,-24,6,5);
+  g.fillStyle='#3e434c';g.fillRect(-7,-3,14,3);
+  // burner flame: flares before a drop
+  const fh=3+9*warm+Math.sin(t*30)*1.2;g.fillStyle='rgba(255,200,90,.95)';g.beginPath();g.moveTo(-3,9);g.quadraticCurveTo(0,9-fh*2,3,9);g.closePath();g.fill();
+  // basket: iron cage full of coals
+  g.fillStyle='#262a31';g.fillRect(-8,9,16,10);g.fillStyle='rgba(255,'+Math.round(110+90*warm)+',40,'+(.6+.4*warm)+')';g.fillRect(-6,10,12,3);
+  g.strokeStyle='#6b727d';g.lineWidth=1.2;g.strokeRect(-8,9,16,10);g.beginPath();g.moveTo(-3,9);g.lineTo(-3,19);g.moveTo(3,9);g.lineTo(3,19);g.stroke();
+  if(warm>0){const gr=g.createRadialGradient(0,14,1,0,14,14+10*warm);gr.addColorStop(0,'rgba(255,170,70,'+(.5*warm)+')');gr.addColorStop(1,'rgba(255,120,40,0)');g.fillStyle=gr;g.fillRect(-26,-6,52,44)}
   g.restore()}
 function drawDrone(g,x,y,t,warn,px,py){g.save();g.translate(x,y);
   // rotor
@@ -673,16 +676,17 @@ function drawDrone(g,x,y,t,warn,px,py){g.save();g.translate(x,y);
   g.restore()}
 // leaping fire-biter: a molten head with jaws that chomp, faster and wider when Ember is close
 function drawChomper(g,x,y,t,up,px,py){const dx=px-x,dy=py-y,near=Math.hypot(dx,dy)<110,face=dx>=0?1:-1;
-  const open=near?.28+.28*Math.abs(Math.sin(t*16)):.1+.12*Math.abs(Math.sin(t*7));
+  const open=.3+.36*Math.abs(Math.sin(t*(near?19:14)));
   // flame crest trailing behind the direction of travel
   for(let k=4;k>=1;k--){g.fillStyle=k>2?'rgba(255,90,20,'+(.45-k*.06)+')':'rgba(255,180,70,'+(.65-k*.1)+')';g.beginPath();g.arc(x-face*k*1.5+Math.sin(t*22+k)*1.6,y+up*k*5.5,9-k*1.4,0,7);g.fill()}
-  g.save();g.translate(x,y);g.scale(face,1);
-  const jaw=(sgn)=>{g.save();g.rotate(-sgn*open);const gr=g.createRadialGradient(-2,-sgn*3,1,0,0,11);gr.addColorStop(0,'#fff1c9');gr.addColorStop(.45,'#ff8a3d');gr.addColorStop(1,'#a81e0a');
-    g.fillStyle=gr;g.beginPath();g.moveTo(10,0);g.arc(0,0,10,0,sgn<0?-Math.PI:Math.PI,sgn<0);g.closePath();g.fill();
-    g.fillStyle='#fffbea';for(const tx of[3,6.5,9.5]){g.beginPath();g.moveTo(tx-1.8,0);g.lineTo(tx,sgn*-3.4);g.lineTo(tx+1.8,0);g.closePath();g.fill()}g.restore()};
-  // mouth glow behind the jaws
-  g.fillStyle='#4a0a04';g.beginPath();g.moveTo(-1,0);g.arc(-1,0,9,-open,open);g.closePath();g.fill();
-  jaw(1);jaw(-1);
+  g.save();g.translate(x,y);g.rotate((up>0?-Math.PI/2:Math.PI/2)+Math.sin(t*9)*.12);g.scale(1,(up>0)===(face>0)?-1:1);
+  const jaw=(sgn,teeth)=>{g.save();g.rotate(sgn*open);
+    if(!teeth){const gr=g.createRadialGradient(-2,sgn*3,1,0,0,11);gr.addColorStop(0,'#fff1c9');gr.addColorStop(.45,'#ff8a3d');gr.addColorStop(1,'#a81e0a');
+      g.fillStyle=gr;g.beginPath();g.moveTo(10,0);g.arc(0,0,10,0,sgn<0?-Math.PI:Math.PI,sgn<0);g.closePath();g.fill()}
+    else{g.fillStyle='#fffbea';for(const tx of[2.6,5.4,8.1]){g.beginPath();g.moveTo(tx-1.3,0);g.lineTo(tx,-sgn*2.7);g.lineTo(tx+1.3,0);g.closePath();g.fill()}}g.restore()};
+  // dark mouth behind the jaws, then jaws, then teeth on top
+  g.fillStyle='#4a0a04';g.beginPath();g.moveTo(-1,0);g.arc(-1,0,9.5,-open,open);g.closePath();g.fill();
+  jaw(1);jaw(-1);jaw(1,1);jaw(-1,1);
   // eye with a heavy brow, on the upper jaw
   g.save();g.rotate(-open);g.fillStyle='#2a0d03';g.beginPath();g.ellipse(1,-5,2.4,2.8,0,0,7);g.fill();g.fillStyle='#ffef9a';g.fillRect(1.6,-6.4,1.2,1.2);
   g.fillStyle='#7a1606';g.beginPath();g.moveTo(-3,-9);g.lineTo(5,-6.8);g.lineTo(4.5,-5.6);g.lineTo(-3,-7.6);g.closePath();g.fill();g.restore();
@@ -690,16 +694,16 @@ function drawChomper(g,x,y,t,up,px,py){const dx=px-x,dy=py-y,near=Math.hypot(dx,
 function drawBubbles(g,x,y,t,u){g.fillStyle='#ffd27a';for(let k=0;k<4;k++){const v=fract(t*2.4+k/4);g.globalAlpha=u*(1-v);g.beginPath();g.arc(x-9+k*6,y+2-v*10*u,1.5+u*2,0,7);g.fill()}g.globalAlpha=1}
 function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
   for(const d of hz.ladles)drawLadle(g,d,clock,t);
-  for(const h of hz.hooks)if(h.st<3)drawHook(g,h,t);
+  for(const h of hz.hooks)drawHook(g,h,t);
   for(const e of hz.cinders){const f=(clock+e.ph)%e.per;if(f>e.per-30)drawBubbles(g,e.x,e.base,t,(f-(e.per-30))/30);const q=cinderPos(e,clock);if(q)drawChomper(g,q.x,q.y,t,q.f<34?1:-1,R.p.x+11,R.p.y+13)}
   for(const j of hz.jets){const s=jetHeat(j,clock);drawJet(g,j,s[0],s[1],t)}
   for(const d of hz.drops)drawDrop(g,d);
   for(const w of hz.crows){const q=crowPos(w,clock);const warm=w.hunt?(w.warn>0?1:0):Math.max(0,((clock+w.off)%w.every-(w.every-16))/16);
-    if(w.hunt)drawDrone(g,q.x,q.y,t,w.warn,R.p.x+11,R.p.y+13);else drawCrow(g,q.x,q.y,t,(((clock+w.off)%w.per)<w.per/2?1:-1),warm)}}
+    if(w.hunt)drawDrone(g,q.x,q.y,t,w.warn,R.p.x+11,R.p.y+13);else drawBalloon(g,q.x,q.y,t,warm)}}
 function hzLights(R,clock,L){const hz=R.hz;
   for(const j of hz.jets){const s=jetHeat(j,clock);if(s[1]>0){const b=jetBox(j,s[1]);L(b[0]+b[2]/2,b[1]+b[3]/2,60+j.len*s[1]*.4,.95)}else L(j.x,j.y-6,30+50*s[0],.35+.55*s[0])}
   for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d of hz.drops)L(d.x,d.y,36,.85);
-  for(const h of hz.hooks)if(h.st<3)L(h.x,h.y,44,.55);for(const w of hz.crows){const q=crowPos(w,clock);L(q.x,q.y,50,.7)}
+  for(const h of hz.hooks)L(h.x,h.y,44,.55);for(const w of hz.crows){const q=crowPos(w,clock);L(q.x,q.y,50,.7)}
   for(const e of hz.cinders){const q=cinderPos(e,clock);if(q)L(q.x,q.y,56,.9)}}
 function drawMovers(g,movers,clock,t){for(const m of movers){g.strokeStyle='#3e434c';g.lineWidth=4;g.lineCap='round';g.beginPath();g.moveTo(m.x,m.y);m.v?g.lineTo(m.x,m.y-96):g.lineTo(m.x+96,m.y);g.stroke();
   g.strokeStyle='#6b727d';g.lineWidth=1.5;g.beginPath();g.moveTo(m.x,m.y);m.v?g.lineTo(m.x,m.y-96):g.lineTo(m.x+96,m.y);g.stroke();const q=moverPos(m,clock);drawCog(g,q.x,q.y,t)}}
@@ -781,7 +785,7 @@ const SFX={jump:()=>whoomp(1),wall:()=>whoomp(1.25),spring:()=>{hiss(.35,.08);to
   win:()=>[392,523,659,784,1046].forEach((f,i)=>tone(f,f,.22,'square',.045,i*.1)),crumble:()=>{hiss(.18,.06);tone(120,60,.16,'triangle',.06)},
   hammer:()=>{tone(95,38,.28,'sine',.13);hiss(.07,.04);tone(560,540,.5,'triangle',.018)},
   warn:()=>{hiss(.3,.025);tone(180,520,.3,'sawtooth',.012)},flare:()=>{hiss(.4,.07);tone(90,55,.35,'sawtooth',.04)},pour:()=>{tone(260,180,.18,'triangle',.02)},
-  splash:()=>{hiss(.07,.02)},clang:()=>{tone(220,170,.45,'square',.035);tone(880,860,.6,'triangle',.03);hiss(.12,.05)},creak:()=>{tone(320,230,.35,'triangle',.025);hiss(.2,.015)},
+  splash:()=>{hiss(.07,.02)},clang:()=>{tone(220,170,.45,'square',.035);tone(880,860,.6,'triangle',.03);hiss(.12,.05)},lift:()=>{tone(140,260,.5,'triangle',.02);hiss(.3,.02)},creak:()=>{tone(320,230,.35,'triangle',.025);hiss(.2,.015)},
   caw:()=>{tone(1320,1320,.07,'square',.022);tone(1320,1320,.07,'square',.022,.12);tone(1760,1760,.09,'square',.02,.24)}};
 function updateMuteBtn(){$('#mMute').textContent='Sound: '+(muted?'off':'on')}
 /* ---------------- Music: a generated, slowly evolving score (no audio files) ----------------
@@ -868,7 +872,7 @@ function makeFx(V){
     hz:(k,x,y)=>{const p=V.R&&V.R.p;if(!p||Math.abs(x-p.x)>560)return;
       if(k==='warn')SFX.warn();else if(k==='flare'){SFX.flare();burst(x,y-6,10,['#fff1c9','#ffb347','#ff6a1a'],3,-.05)}else if(k==='pour')SFX.pour();
       else if(k==='splash'||k==='drop'){SFX.splash();if(k==='splash')burst(x,y,6,['#ffb347','#ff6a1a'],2,.2)}else if(k==='clang'){V.shake=Math.max(V.shake,reduceMotion?0:6);SFX.clang();burst(x,y,14,['#8d95a1','#ffb347','#ff6a1a'],3,.2)}
-      else if(k==='creak')SFX.creak();else if(k==='caw')SFX.caw();else if(k==='leap'){SFX.splash();burst(x,y,8,['#ffb347','#ff6a1a'],2.5,.2)}},
+      else if(k==='creak')SFX.creak();else if(k==='lift')SFX.lift();else if(k==='caw')SFX.caw();else if(k==='leap'){SFX.splash();burst(x,y,8,['#ffb347','#ff6a1a'],2.5,.2)}},
     crumble:(R,i)=>{const tx=i%R.w,ty=(i/R.w)|0;burst(tx*TS+16,ty*TS+16,12,['#4a3a31','#ff6a1a'],2.5,.25);SFX.crumble()},
   }}
 
