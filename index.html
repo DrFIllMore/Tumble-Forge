@@ -394,7 +394,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-01 v25';
+const BUILD='2026-11-01 v26';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -1268,7 +1268,8 @@ function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;acc+=dt*(scre
    throws out one spark (Ember), a wall of fire rises, and TUMBLE / FORGE stamp in. The title theme starts on FORGE.
    Any tap skips. It plays on every launch, never when you return to the title from a level. */
 const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
-  const HITS=[.75,2.05,3.35],LAND=4.15,WAVE=4.4,SA=4.75,SB=5.2,FLY0=6.1,FLY=.9;
+  // one slam: the hammer hits, Ember flies out, fire rises and the whole logo stamps in on the same beat
+  const HITS=[.6],HL=HITS[HITS.length-1],LAND=1.35,WAVE=.6,SA=.6,SB=.6,FLY0=1.75,FLY=.8;
   let W=800,H=480,k=1,state='wait',t0=0,last=0,raf=0,parts=[],shake=0,flash=0,ib=null,cued=false,landSq=0,seen={};
   if(isTouch===false)$('#introTap').textContent='Click or press any key to light the forge';
   function size(){const d=Math.min(window.devicePixelRatio||1,2);cv.width=Math.max(1,innerWidth*d);cv.height=Math.max(1,innerHeight*d);k=cv.height/H;W=cv.width/k}
@@ -1288,8 +1289,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
     osc('triangle',1300,1700,LAND,.12,.05);osc('triangle',1700,2100,LAND+.09,.1,.035);
     {const n=AC.sampleRate*.8|0,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/n);
       const sr=AC.createBufferSource(),fl=AC.createBiquadFilter(),gg=AC.createGain();sr.buffer=b;fl.type='bandpass';fl.Q.value=1.2;fl.frequency.setValueAtTime(250,T+WAVE);fl.frequency.exponentialRampToValueAtTime(3200,T+WAVE+.75);gg.gain.value=.3;sr.connect(fl);fl.connect(gg);gg.connect(ib);sr.start(T+WAVE)}
-    osc('sine',110,36,SA,.5,.6);ring(SA,587.3,.07,1.8);noise(SA,.2,.3,'lowpass',2200);
-    osc('sine',85,30,SB,.8,.75);ring(SB,440,.08,2.6);noise(SB,1.2,.09,'highpass',4200);noise(SB,.25,.4,'lowpass',2000)}
+    osc('sine',85,30,SB,.8,.5);ring(SB,440,.08,2.6);noise(SB,1.2,.09,'highpass',4200);noise(SB,.25,.4,'lowpass',2000)}
   function start(){if(state!=='wait')return;state='run';el.classList.add('run');t0=performance.now();sounds();LOG.add('intro',{})}
   // skipping jumps straight to the hand-off: the logo is already stamped, the scene fades, the logo flies to its place
   function skip(){const T=(performance.now()-t0)/1000;if(T>=FLY0)return;for(const x of['TUMBLE','FORGE','land','h0','h1','h2'])seen[x]=1;
@@ -1305,9 +1305,9 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
   el.addEventListener('pointerdown',tap);
   addEventListener('keydown',e=>{if(state==='done'||el.hidden)return;e.stopImmediatePropagation();e.preventDefault();tap()},true);
   // ---- drawing ----
-  function hammerRaise(T){if(T>HITS[2]+.15)return 1+.6*clamp01((T-HITS[2]-.15)/.6);
+  function hammerRaise(T){if(T>HL+.15)return 1+.6*clamp01((T-HL-.15)/.6);
     for(let i=0;i<HITS.length;i++){const h=HITS[i];if(T<=h){if(T>h-.2){const u=(T-(h-.2))/.2;return 1-u*u}const p=i?HITS[i-1]:-9;if(T<p+.55){const u=(T-p)/.55;return Math.sin(u*Math.PI/2)}return 1}}return 1}
-  function draw(T,dt){const cx=W/2,floor=372,heat=state==='wait'?.15+.08*Math.sin(T*2.2):Math.min(1,HITS.filter(h=>T>=h).length/3+(T>WAVE?.3:0));
+  function draw(T,dt){const cx=W/2,floor=372,heat=state==='wait'?.15+.08*Math.sin(T*2.2):Math.min(1,HITS.filter(h=>T>=h).length/HITS.length+(T>WAVE?.3:0));
     const fl=state==='run'?clamp01((T-FLY0)/FLY):0,fe=fl<.5?2*fl*fl:1-Math.pow(-2*fl+2,2)/2;if(fl>0&&!seen.fly){seen.fly=1;handoff()}
     g.setTransform(k,0,0,k,0,0);let sx=0,sy=0;if(shake>.2&&!reduceMotion){sx=rnd(-shake,shake);sy=rnd(-shake,shake)}shake*=Math.pow(.86,dt);
     g.fillStyle='#0d0907';g.fillRect(0,0,W,H);g.save();g.translate(sx,sy);
@@ -1319,7 +1319,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
     g.fillStyle='#24272d';g.beginPath();g.moveTo(cx-108,302);g.lineTo(cx-70,296);g.lineTo(cx+62,296);g.lineTo(cx+62,318);g.lineTo(cx+30,326);g.lineTo(cx+24,346);g.lineTo(cx+50,floor);g.lineTo(cx-50,floor);g.lineTo(cx-24,346);g.lineTo(cx-30,326);g.lineTo(cx-70,318);g.quadraticCurveTo(cx-95,312,cx-108,302);g.closePath();g.fill();
     g.fillStyle='#8d95a1';g.fillRect(cx-70,296,132,2.5);g.fillStyle=`rgba(255,140,50,${.15+.7*heat})`;g.fillRect(cx-40,293,80,3);
     // trip hammer
-    const ha=state==='wait'?0:clamp01(1-(T-HITS[2]-.4)/.6)*clamp01(T/.4);
+    const ha=state==='wait'?0:clamp01(1-(T-HL-.25)/.45)*clamp01(T/.15);
     if(ha>0){const r=hammerRaise(T),a=Math.PI+1.15*r,L=165;g.save();g.globalAlpha=ha;g.translate(cx+175,264);g.rotate(a);
       g.fillStyle='#3a2a22';g.fillRect(0,-5,L,10);g.fillStyle='#5a4032';g.fillRect(0,-5,L,2.5);
       g.fillStyle='#2f343c';g.fillRect(L-17,-32,34,64);g.fillStyle='#6b727d';g.fillRect(L-17,-32,4,64);g.fillStyle='#4a5260';g.fillRect(L-10,-34,20,4);g.fillRect(L-10,30,20,4);g.restore()}
@@ -1328,7 +1328,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
       g.globalAlpha=clamp01(q.life/q.max*1.4);g.fillStyle=q.c;g.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s)}g.globalAlpha=1;
     if(state==='wait'&&Math.random()<.08*dt)parts.push({x:cx+rnd(-60,60),y:296,vx:rnd(-.3,.3),vy:rnd(-1.2,-.4),life:rnd(40,80),max:80,c:'#ff8a3d',s:rnd(1.5,2.5)});
     // Ember, thrown out by the last strike
-    if(state!=='wait'&&T>=HITS[2]){const u=clamp01((T-HITS[2])/(LAND-HITS[2])),X=cx-5+(-150)*u,Y=290+(floor-13-290)*u-150*Math.sin(Math.PI*u);
+    if(state!=='wait'&&T>=HL){const u=clamp01((T-HL)/(LAND-HL)),X=cx-5+(-150)*u,Y=290+(floor-13-290)*u-150*Math.sin(Math.PI*u);
       if(u>=1&&!seen.land){seen.land=1;landSq=.35;spray(X,floor,10,4,['#ffd27a','#ff6a1a'])}landSq*=Math.pow(.85,dt);
       const gl=g.createRadialGradient(X,Y,2,X,Y,70);gl.addColorStop(0,'rgba(255,190,90,.55)');gl.addColorStop(1,'rgba(255,140,40,0)');g.fillStyle=gl;g.fillRect(X-70,Y-70,140,140);
       g.save();g.translate(X,Y);g.scale(2.4,2.4);g.translate(-X,-Y);drawSpark(g,{x:X-11,y:Y-16,w:22,h:26,vx:u<1?-2.5:0,vy:u<1?(u<.5?-5:5):0,face:u<1?-1:1,sq:u<1?-.15:landSq},T,1);g.restore()}
@@ -1354,7 +1354,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
       else{g.fillStyle='#f3e6d8';g.shadowColor=`rgba(255,170,90,${.35*(1-fe)})`;g.shadowBlur=14*(1-fe)}
       g.fillText(txt,0,f*.35);g.restore()}
     if(state==='done')return;
-    HITS.forEach((h,i)=>{if(state==='run'&&T>=h&&!seen['h'+i]){seen['h'+i]=1;shake=Math.max(shake,6+i*3);flash=Math.max(flash,.18+i*.08);spray(cx-10,296,26+i*14,7+i*2,['#fff1c9','#ffd27a','#ff8a3d','#ff6a1a'])}});
+    HITS.forEach((h,i)=>{if(state==='run'&&T>=h&&!seen['h'+i]){seen['h'+i]=1;shake=Math.max(shake,12);flash=Math.max(flash,.38);spray(cx-10,296,60,11,['#fff1c9','#ffd27a','#ff8a3d','#ff6a1a'])}});
     if(state==='run'&&T>=FLY0+FLY)finish()}
   function loop(now){const dt=Math.min(3,(now-(last||now))/16.667);last=now;const T=state==='wait'?now/1000:(now-t0)/1000;draw(T,dt);if(!el.hidden)raf=requestAnimationFrame(loop)}
   raf=requestAnimationFrame(loop);
