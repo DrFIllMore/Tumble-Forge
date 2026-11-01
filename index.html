@@ -143,7 +143,8 @@ body.adjusting #hint{display:none}
 #introSkip{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(max(16px,env(safe-area-inset-right,0px)) + 4px);margin:0;font-family:var(--f-ui);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--ash);opacity:0;transition:opacity .4s}
 #intro.run #introTap{display:none}#intro.run #introSkip{opacity:.45}#intro.out{opacity:0;pointer-events:none}
 @keyframes tapPulse{0%,100%{opacity:.35}50%{opacity:1}}
-#menu.reveal{animation:menuIn .9s ease both}@keyframes menuIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#menu.enter .logo{opacity:0}#menu.enter>*:not(.m-left),#menu.enter .m-left>*:not(.logo){animation:menuIn .85s ease both}
+@keyframes menuIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#introTap{animation:none;opacity:.8}}
 #rotate{display:none;position:fixed;inset:0;z-index:60;background:var(--soot);flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px}
 #rotate .phone{width:46px;height:80px;border:4px solid var(--molten);border-radius:8px;animation:turn 2.2s ease-in-out infinite;box-shadow:0 0 20px rgba(255,106,26,.4)}
@@ -393,7 +394,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-01 v24';
+const BUILD='2026-11-01 v25';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -1187,7 +1188,7 @@ function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
         h('div',{style:'min-width:0'},h('span',{class:'nm',text:L.name}),h('span',{class:'meta',text:meta})),
         medalPips(L.id),
         h('div',{class:'row-actions'},h('button',{class:'go',disabled:open?null:'',onclick:()=>open&&startLevel(i,false)},open?'Play':'Locked'),
-          done&&PROOF[L.id]?h('button',{onclick:()=>startLevel(i,true)},'Watch the Forgemaster'):null)))})});
+          null)))})});
   $('#progress').textContent=`${n} / ${LEVELS.length} cleared`;
   $('#pride').textContent=pride.total?`The forge has claimed Ember ${pride.total.toLocaleString()} time${pride.total===1?'':'s'}.`:'The forge has not claimed Ember yet.'}
 $('#mPlay').addEventListener('click',()=>{let i=LEVELS.findIndex((L,k)=>unlocked(k)&&!cleared[L.id]);if(i<0)i=LEVELS.length-1;startLevel(i,false)});
@@ -1267,7 +1268,7 @@ function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;acc+=dt*(scre
    throws out one spark (Ember), a wall of fire rises, and TUMBLE / FORGE stamp in. The title theme starts on FORGE.
    Any tap skips. It plays on every launch, never when you return to the title from a level. */
 const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
-  const HITS=[.75,2.05,3.35],LAND=4.15,WAVE=4.4,SA=4.75,SB=5.2,END=7.1;
+  const HITS=[.75,2.05,3.35],LAND=4.15,WAVE=4.4,SA=4.75,SB=5.2,FLY0=6.1,FLY=.9;
   let W=800,H=480,k=1,state='wait',t0=0,last=0,raf=0,parts=[],shake=0,flash=0,ib=null,cued=false,landSq=0,seen={};
   if(isTouch===false)$('#introTap').textContent='Click or press any key to light the forge';
   function size(){const d=Math.min(window.devicePixelRatio||1,2);cv.width=Math.max(1,innerWidth*d);cv.height=Math.max(1,innerHeight*d);k=cv.height/H;W=cv.width/k}
@@ -1290,17 +1291,24 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
     osc('sine',110,36,SA,.5,.6);ring(SA,587.3,.07,1.8);noise(SA,.2,.3,'lowpass',2200);
     osc('sine',85,30,SB,.8,.75);ring(SB,440,.08,2.6);noise(SB,1.2,.09,'highpass',4200);noise(SB,.25,.4,'lowpass',2000)}
   function start(){if(state!=='wait')return;state='run';el.classList.add('run');t0=performance.now();sounds();LOG.add('intro',{})}
-  function finish(skipped){if(state==='done')return;state='done';if(!cued){cued=true;Music.cue()}
+  // skipping jumps straight to the hand-off: the logo is already stamped, the scene fades, the logo flies to its place
+  function skip(){const T=(performance.now()-t0)/1000;if(T>=FLY0)return;for(const x of['TUMBLE','FORGE','land','h0','h1','h2'])seen[x]=1;
     if(ib){try{const t=AC.currentTime;ib.gain.cancelScheduledValues(t);ib.gain.setValueAtTime(ib.gain.value,t);ib.gain.linearRampToValueAtTime(0,t+.2)}catch(e){}}
-    if(skipped)LOG.add('intro',{skipped:1});el.classList.add('out');const m=$('#menu');m.classList.remove('reveal');void m.offsetWidth;m.classList.add('reveal');
-    setTimeout(()=>{el.hidden=true;cancelAnimationFrame(raf)},850)}
-  function tap(e){if(e)e.preventDefault();if(state==='wait'){ensureAudio();start()}else if(state==='run'&&(performance.now()-t0)>300)finish(true)}
+    if(!cued){cued=true;Music.cue()}t0=performance.now()-FLY0*1000;LOG.add('intro',{skipped:1})}
+  function handoff(){el.style.background='transparent';const m=$('#menu');m.classList.remove('enter');void m.offsetWidth;m.classList.add('enter')}
+  function finish(){if(state==='done')return;state='done';if(!cued){cued=true;Music.cue()}el.hidden=true;cancelAnimationFrame(raf);$('#menu').classList.remove('enter')}
+  function tap(e){if(e)e.preventDefault();if(state==='wait'){ensureAudio();start()}else if(state==='run'&&(performance.now()-t0)>300)skip()}
+  // where the title screen's logo words actually sit: centre x, baseline y and font size, in the intro's units
+  function target(sel){const sp=document.querySelector(sel);if(!sp||!sp.firstChild)return null;const r=document.createRange();r.selectNodeContents(sp);const b=r.getBoundingClientRect();
+    const mk=document.createElement('span');mk.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';sp.appendChild(mk);const base=mk.getBoundingClientRect().top;mk.remove();
+    const u=H/innerHeight;return{x:(b.left+b.right)/2*u,y:base*u,f:parseFloat(getComputedStyle(sp).fontSize)*u}}
   el.addEventListener('pointerdown',tap);
   addEventListener('keydown',e=>{if(state==='done'||el.hidden)return;e.stopImmediatePropagation();e.preventDefault();tap()},true);
   // ---- drawing ----
   function hammerRaise(T){if(T>HITS[2]+.15)return 1+.6*clamp01((T-HITS[2]-.15)/.6);
     for(let i=0;i<HITS.length;i++){const h=HITS[i];if(T<=h){if(T>h-.2){const u=(T-(h-.2))/.2;return 1-u*u}const p=i?HITS[i-1]:-9;if(T<p+.55){const u=(T-p)/.55;return Math.sin(u*Math.PI/2)}return 1}}return 1}
   function draw(T,dt){const cx=W/2,floor=372,heat=state==='wait'?.15+.08*Math.sin(T*2.2):Math.min(1,HITS.filter(h=>T>=h).length/3+(T>WAVE?.3:0));
+    const fl=state==='run'?clamp01((T-FLY0)/FLY):0,fe=fl<.5?2*fl*fl:1-Math.pow(-2*fl+2,2)/2;if(fl>0&&!seen.fly){seen.fly=1;handoff()}
     g.setTransform(k,0,0,k,0,0);let sx=0,sy=0;if(shake>.2&&!reduceMotion){sx=rnd(-shake,shake);sy=rnd(-shake,shake)}shake*=Math.pow(.86,dt);
     g.fillStyle='#0d0907';g.fillRect(0,0,W,H);g.save();g.translate(sx,sy);
     // forge glow behind the anvil
@@ -1330,20 +1338,24 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
         if(Math.random()<.9)for(let i=0;i<3;i++)parts.push({x:rnd(0,W),y:fy+rnd(0,60),vx:rnd(-.6,.6),vy:rnd(-5,-2),life:rnd(20,40),max:40,c:Math.random()<.5?'#ffd27a':'#ff6a1a',s:rnd(2,4)})}}
     // logo stamps
     const fs=Math.min(96,W*.13);
-    const stamp=(T0,txt,y,isB)=>{if(state==='wait'||T<T0)return;const u=clamp01((T-T0)/.14),sc=1+.9*(1-u)*(1-u);
-      if(!seen[txt]){seen[txt]=1;shake=Math.max(shake,isB?11:8);flash=Math.max(flash,isB?.35:.22);spray(cx,y+6,isB?36:22,7,['#ffd27a','#ff6a1a','#fff1c9']);if(isB&&!cued){cued=true;Music.cue()}}
-      g.save();g.translate(cx,y-fs*.35);g.scale(sc,sc);g.globalAlpha=clamp01(u*1.6);g.font=`400 ${fs}px 'Saira Stencil One','Impact','Arial Narrow',sans-serif`;g.textAlign='center';g.textBaseline='alphabetic';
-      if(isB){const gr=g.createLinearGradient(0,-fs*.55,0,fs*.35);gr.addColorStop(0,'#ffe2a0');gr.addColorStop(.45,'#ff8a3a');gr.addColorStop(1,'#d0420c');g.fillStyle=gr;g.shadowColor='rgba(255,106,26,.7)';g.shadowBlur=30}
-      else{g.fillStyle='#f3e6d8';g.shadowColor='rgba(255,170,90,.35)';g.shadowBlur=14}
-      g.fillText(txt,0,fs*.35);g.restore()};
-    stamp(SA,'TUMBLE',138,false);stamp(SB,'FORGE',138+fs*.92,true);
+    const words=[[SA,'TUMBLE',138,false,'.logo .a'],[SB,'FORGE',138+fs*.92,true,'.logo .b']];
+    for(const[T0,txt,y,isB]of words)if(state!=='wait'&&T>=T0&&!seen[txt]){seen[txt]=1;shake=Math.max(shake,isB?11:8);flash=Math.max(flash,isB?.35:.22);spray(cx,y+6,isB?36:22,7,['#ffd27a','#ff6a1a','#fff1c9']);if(isB&&!cued){cued=true;Music.cue()}}
     g.restore();
     if(flash>.01){g.fillStyle=`rgba(255,210,150,${flash})`;g.fillRect(0,0,W,H);flash*=Math.pow(.86,dt)}
     // vignette
     {const gr=g.createRadialGradient(cx,H*.55,H*.35,cx,H*.55,Math.max(W,H)*.8);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=gr;g.fillRect(0,0,W,H)}
+    // hand-off: wipe the forge scene away so the title screen shows through, leaving only the logo
+    if(fe>0){g.globalCompositeOperation='destination-out';g.fillStyle=`rgba(0,0,0,${fe})`;g.fillRect(0,0,W,H);g.globalCompositeOperation='source-over'}
+    for(const[T0,txt,y,isB,sel]of words){if(state==='wait'||T<T0)continue;const u=clamp01((T-T0)/.14),sc=1+.9*(1-u)*(1-u);let x=cx,by=y,f=fs;
+      if(fe>0){const tg=target(sel);if(tg){x+=(tg.x-x)*fe;by+=(tg.y-by)*fe;f+=(tg.f-f)*fe}}
+      g.save();g.translate(x+(fe>0?0:sx),by-f*.35+(fe>0?0:sy));g.scale(sc,sc);g.globalAlpha=clamp01(u*1.6);g.font=`400 ${f}px 'Saira Stencil One','Impact','Arial Narrow',sans-serif`;g.textAlign='center';g.textBaseline='alphabetic';
+      try{g.letterSpacing=(f*.02).toFixed(2)+'px'}catch(e){}
+      if(isB){const gr=g.createLinearGradient(0,-f*.55,0,f*.35);gr.addColorStop(0,'#ffe2a0');gr.addColorStop(.45,'#ff8a3a');gr.addColorStop(1,'#d0420c');g.fillStyle=gr;g.shadowColor=`rgba(255,106,26,${.7-.25*fe})`;g.shadowBlur=30-12*fe}
+      else{g.fillStyle='#f3e6d8';g.shadowColor=`rgba(255,170,90,${.35*(1-fe)})`;g.shadowBlur=14*(1-fe)}
+      g.fillText(txt,0,f*.35);g.restore()}
     if(state==='done')return;
     HITS.forEach((h,i)=>{if(state==='run'&&T>=h&&!seen['h'+i]){seen['h'+i]=1;shake=Math.max(shake,6+i*3);flash=Math.max(flash,.18+i*.08);spray(cx-10,296,26+i*14,7+i*2,['#fff1c9','#ffd27a','#ff8a3d','#ff6a1a'])}});
-    if(state==='run'&&T>=END)finish(false)}
+    if(state==='run'&&T>=FLY0+FLY)finish()}
   function loop(now){const dt=Math.min(3,(now-(last||now))/16.667);last=now;const T=state==='wait'?now/1000:(now-t0)/1000;draw(T,dt);if(!el.hidden)raf=requestAnimationFrame(loop)}
   raf=requestAnimationFrame(loop);
   return{get active(){return!el.hidden}}})();
