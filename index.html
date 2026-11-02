@@ -43,11 +43,11 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- Menu ---------- */
 #menu{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;
-  padding:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 16px) calc(max(18px,env(safe-area-inset-right,0px)) + var(--ex,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) calc(max(18px,env(safe-area-inset-left,0px)) + var(--ex,0px));
+  padding:calc(calc(var(--st,env(safe-area-inset-top,0px)) + var(--et,0px)) + 16px) calc(max(18px,var(--sr,env(safe-area-inset-right,0px))) + var(--ex,0px)) calc(var(--sb,env(safe-area-inset-bottom,0px)) + 16px) calc(max(18px,var(--sl,env(safe-area-inset-left,0px))) + var(--ex,0px));
   background:linear-gradient(90deg,rgba(13,9,7,.92) 0%,rgba(13,9,7,.55) 55%,rgba(13,9,7,.35) 100%)}
 .m-left{display:flex;flex-direction:column;justify-content:flex-start;gap:12px;min-width:0;overflow-y:auto;touch-action:pan-y}
 .m-left>:first-child{margin-top:auto}.m-left>:last-child{margin-bottom:auto}
-.logo{font-family:var(--f-display);font-weight:400;line-height:.88;font-size:clamp(44px,13vh,96px);margin:0;letter-spacing:.02em}
+.logo{font-family:var(--f-display);font-weight:400;line-height:.88;font-size:clamp(44px,calc(var(--vh,1vh)*13),96px);margin:0;letter-spacing:.02em}
 .logo span{display:block}
 .logo .a{color:var(--ash)}
 .logo .b{background:linear-gradient(180deg,#ffe2a0 0%,#ff8a3a 45%,#d0420c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,106,26,.45))}
@@ -89,7 +89,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- HUD ---------- */
 #hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none;
-  padding:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 10px) calc(max(12px,env(safe-area-inset-right,0px)) + var(--ex,0px)) 0 calc(max(12px,env(safe-area-inset-left,0px)) + var(--ex,0px))}
+  padding:calc(calc(var(--st,env(safe-area-inset-top,0px)) + var(--et,0px)) + 10px) calc(max(12px,var(--sr,env(safe-area-inset-right,0px))) + var(--ex,0px)) 0 calc(max(12px,var(--sl,env(safe-area-inset-left,0px))) + var(--ex,0px))}
 .hud-l,.hud-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;pointer-events:auto}
 .hud-r{justify-content:flex-end}
 .icon-btn{width:38px;height:38px;border-radius:6px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-size:16px}
@@ -103,17 +103,17 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 #heatFill{height:100%;width:100%;background:linear-gradient(90deg,#d0420c,#ff8a3a,#ffd27a);transform-origin:left center}
 #heatChip.low #heatFill{background:#ff3b30}
 #heatChip.low{border-color:var(--danger);color:var(--danger)}
-#hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 58px);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:16px;font-weight:600;color:var(--ash);width:max-content;max-width:min(560px,80vw);text-align:center;pointer-events:none;transition:opacity .5s}
+#hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(calc(var(--st,env(safe-area-inset-top,0px)) + var(--et,0px)) + 58px);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:16px;font-weight:600;color:var(--ash);width:max-content;max-width:min(560px,calc(var(--vw,1vw)*80));text-align:center;pointer-events:none;transition:opacity .5s}
 #hint b{color:var(--glow)}
 
 /* ---------- Touch controls ---------- */
 #controls{position:absolute;inset:0;pointer-events:none}
-#pad{position:absolute;pointer-events:auto;left:0;top:calc(calc(env(safe-area-inset-top,0px) + var(--et,0px)) + 56px);bottom:0;width:50%;touch-action:none}
-#jumpBtn{position:absolute;pointer-events:auto;right:calc(calc(env(safe-area-inset-right,0px) + var(--ex,0px)) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,193,94,.55),rgba(255,106,26,.45));border:3px solid var(--molten);font-family:var(--f-display);font-size:20px;color:var(--ash);touch-action:none;text-shadow:0 2px 0 rgba(0,0,0,.45);letter-spacing:.04em}
+#pad{position:absolute;pointer-events:auto;left:0;top:calc(calc(var(--st,env(safe-area-inset-top,0px)) + var(--et,0px)) + 56px);bottom:0;width:50%;touch-action:none}
+#jumpBtn{position:absolute;pointer-events:auto;right:calc(calc(var(--sr,env(safe-area-inset-right,0px)) + var(--ex,0px)) + 18px);bottom:calc(var(--sb,env(safe-area-inset-bottom,0px)) + 14px);width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,193,94,.55),rgba(255,106,26,.45));border:3px solid var(--molten);font-family:var(--f-display);font-size:20px;color:var(--ash);touch-action:none;text-shadow:0 2px 0 rgba(0,0,0,.45);letter-spacing:.04em}
 #jumpBtn.on{background:radial-gradient(circle at 50% 40%,rgba(255,226,160,.9),rgba(255,106,26,.85));transform:scale(.95)}
 
 /* ---------- Modal / rotate ---------- */
-#modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:calc(16px + var(--et,0px)) calc(max(16px,env(safe-area-inset-right,0px)) + var(--ex,0px)) 16px calc(max(16px,env(safe-area-inset-left,0px)) + var(--ex,0px));z-index:20}
+#modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:calc(16px + var(--et,0px)) calc(max(16px,var(--sr,env(safe-area-inset-right,0px))) + var(--ex,0px)) 16px calc(max(16px,var(--sl,env(safe-area-inset-left,0px))) + var(--ex,0px));z-index:20}
 #modal.peek{background:transparent;place-items:center}
 #modal.peek #modalCard{width:min(400px,100%);background:rgba(26,17,13,.9);padding:10px 14px;gap:6px;transition:opacity .15s}
 #modal.peek #modalCard h3{font-size:20px}
@@ -139,8 +139,8 @@ body.adjusting #hint{display:none}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 #intro{position:fixed;inset:0;z-index:50;background:var(--soot);transition:opacity .8s ease;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 #intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-#introTap{position:absolute;left:0;right:0;bottom:calc(9% + env(safe-area-inset-bottom,0px));margin:0;text-align:center;font-family:var(--f-ui);font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:clamp(15px,4.4vh,22px);color:var(--glow);animation:tapPulse 1.6s ease-in-out infinite}
-#introSkip{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(max(16px,env(safe-area-inset-right,0px)) + 4px);margin:0;font-family:var(--f-ui);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--ash);opacity:0;transition:opacity .4s}
+#introTap{position:absolute;left:0;right:0;bottom:calc(9% + var(--sb,env(safe-area-inset-bottom,0px)));margin:0;text-align:center;font-family:var(--f-ui);font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:clamp(15px,calc(var(--vh,1vh)*4.4),22px);color:var(--glow);animation:tapPulse 1.6s ease-in-out infinite}
+#introSkip{position:absolute;top:calc(12px + var(--st,env(safe-area-inset-top,0px)));right:calc(max(16px,var(--sr,env(safe-area-inset-right,0px))) + 4px);margin:0;font-family:var(--f-ui);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--ash);opacity:0;transition:opacity .4s}
 #intro.run #introTap{display:none}#intro.run #introSkip{opacity:.45}#intro.out{opacity:0;pointer-events:none}
 @keyframes tapPulse{0%,100%{opacity:.35}50%{opacity:1}}
 #menu.enter .logo{opacity:0}#menu.enter>*:not(.m-left),#menu.enter .m-left>*:not(.logo){animation:menuIn .85s ease both}
@@ -152,9 +152,9 @@ body.adjusting #hint{display:none}
 #rotate p{color:var(--muted);margin:0;max-width:30ch}
 @keyframes turn{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
-@media (max-width:620px) and (orientation:portrait){#menu{grid-template-columns:1fr;overflow-y:auto;touch-action:pan-y}.panel{overflow:visible}}
+@media (max-width:620px) and (orientation:portrait){html:not(.rot) #menu{grid-template-columns:1fr;overflow-y:auto;touch-action:pan-y}html:not(.rot) .panel{overflow:visible}}
 /* short landscape screens (a phone, especially inside an app): tighter menu so every button fits */
-@media (max-height:440px){.logo{font-size:clamp(36px,11vh,64px)}.tag{font-size:14px;line-height:1.3}.pride{font-size:14px}.m-left{gap:8px}.m-actions .btn{padding:8px 12px;font-size:15px}.m-actions .btn.sm{padding:7px 10px;font-size:13px}#buildTag{font-size:11px}}
+@media (max-height:440px){.logo{font-size:clamp(36px,calc(var(--vh,1vh)*11),64px)}.tag{font-size:14px;line-height:1.3}.pride{font-size:14px}.m-left{gap:8px}.m-actions .btn{padding:8px 12px;font-size:15px}.m-actions .btn.sm{padding:7px 10px;font-size:13px}#buildTag{font-size:11px}}
 @media (prefers-reduced-motion:reduce){#rotate .phone{animation:none;transform:rotate(-90deg)}}
 
 
@@ -188,7 +188,14 @@ body.adjusting #hint{display:none}
 .tile.locked .meta{text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:11px}
 @media (max-height:440px){.tile{padding:4px 9px 5px;gap:1px}.lgrid{gap:5px}.tile .t1{line-height:1}.tile .t2{line-height:1.15}.tile .nm{font-size:15px}.tile .code{font-size:12px}.tile .meta{font-size:12px}.p-world{font-size:15px}.wtab{width:27px;height:25px;font-size:14px}.panel{padding:8px 10px;gap:6px}
   .m-left{gap:7px}.tag{font-size:13.5px}#menu{row-gap:12px}}
-@media (max-width:620px) and (orientation:portrait){.m-left,.panel{overflow:visible}}
+@media (max-width:620px) and (orientation:portrait){html:not(.rot) .m-left,html:not(.rot) .panel{overflow:visible}}
+
+/* sideways mode */
+html.rot.short .logo{font-size:clamp(36px,calc(var(--vh,1vh)*11),64px)}html.rot.short .tag{font-size:14px;line-height:1.3}html.rot.short .pride{font-size:14px}html.rot.short .m-left{gap:8px}html.rot.short .m-actions .btn{padding:8px 12px;font-size:15px}html.rot.short .m-actions .btn.sm{padding:7px 10px;font-size:13px}html.rot.short #buildTag{font-size:11px}
+html.rot.short .tile{padding:4px 9px 5px;gap:1px}html.rot.short .lgrid{gap:5px}html.rot.short .tile .t1{line-height:1}html.rot.short .tile .t2{line-height:1.15}html.rot.short .tile .nm{font-size:15px}html.rot.short .tile .code{font-size:12px}html.rot.short .tile .meta{font-size:12px}html.rot.short .p-world{font-size:15px}html.rot.short .wtab{width:27px;height:25px;font-size:14px}html.rot.short .panel{padding:8px 10px;gap:6px}html.rot.short .m-left{gap:7px}html.rot.short .tag{font-size:13.5px}html.rot.short #menu{row-gap:12px}
+html.rot{--st:0px;--sb:0px;--sl:env(safe-area-inset-top,0px);--sr:env(safe-area-inset-bottom,0px)}
+html.rot #app{inset:auto;left:0;top:0;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)}
+html.rot #rotate{display:none!important}
 </style>
 
 <div id="app">
@@ -542,7 +549,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-01 v34';
+const BUILD='2026-11-01 v35';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -581,8 +588,18 @@ let dpr=1,scale=1,viewW=800,baseScale=1,baseW=800,viewH=VH,zoom=1;
 // View size: 100% shows all 15 rows of the level; larger values zoom in and the camera follows Ember up and down.
 // Short screens (a phone held sideways) start zoomed in; the player's own choice is remembered per device.
 let zoomSet=store.get('tf-zoom',null);
-function defaultZoom(){return innerHeight<520?1.4:1}
-function resize(){dpr=Math.min(window.devicePixelRatio||1,2);const w=innerWidth,hh=innerHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
+// Sideways mode: an upright phone gets the game turned 90 degrees, so turning the phone plays in landscape
+// even with rotation lock on (iPhone does not let a web page lock the orientation itself).
+const SIDE={on:false};
+function appW(){return SIDE.on?window.innerHeight:window.innerWidth}function appH(){return SIDE.on?window.innerWidth:window.innerHeight}
+function px(e){return SIDE.on?e.clientY:px(e)}
+function sideCheck(){const touch=matchMedia('(pointer: coarse)').matches||('ontouchstart' in window),want=touch&&window.innerHeight>window.innerWidth;
+  const de=document.documentElement,app=document.getElementById('app');if(want!==SIDE.on){SIDE.on=want;de.classList.toggle('rot',want)}
+  if(app){if(want){app.style.width=window.innerHeight+'px';app.style.height=window.innerWidth+'px'}else{app.style.width='';app.style.height=''}}
+  de.classList.toggle('short',appH()<=440);de.style.setProperty('--vh',appH()/100+'px');de.style.setProperty('--vw',appW()/100+'px')}
+sideCheck();addEventListener('resize',sideCheck);addEventListener('orientationchange',()=>setTimeout(()=>{sideCheck();dispatchEvent(new Event('resize'))},250));
+function defaultZoom(){return appH()<520?1.4:1}
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);const w=appW(),hh=appH();cvs.width=Math.round(w*dpr);cvs.height=Math.round(hh*dpr);
   zoom=zoomSet!=null?zoomSet:defaultZoom();baseScale=hh/VH;baseW=w/baseScale;scale=baseScale*zoom;viewW=w/scale;viewH=hh/scale}
 // Screen edges: extra space at the sides and top so the buttons and HUD stay clear of whatever frames the game
 // (the phone's rounded corners, or the app's own close and menu buttons). Stored per device, in CSS pixels.
@@ -590,7 +607,7 @@ let edges=Object.assign({x:0,t:0},store.get('tf-edges',{}));
 function applyEdges(){const r=document.documentElement.style;r.setProperty('--ex',edges.x+'px');r.setProperty('--et',edges.t+'px')}
 applyEdges();
 function setZoom(z){zoomSet=Math.max(1,Math.min(2,z));store.set('tf-zoom',zoomSet);resize()}
-let resizeLogT=null;addEventListener('resize',()=>{clearTimeout(resizeLogT);resizeLogT=setTimeout(()=>LOG.add('resize',{w:innerWidth,h:innerHeight,zoom:Math.round(zoom*100)}),600)});
+let resizeLogT=null;addEventListener('resize',()=>{clearTimeout(resizeLogT);resizeLogT=setTimeout(()=>LOG.add('resize',{w:appW(),h:appH(),zoom:Math.round(zoom*100)}),600)});
 addEventListener('resize',resize);resize();
 function rr(g,x,y,w,hh,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+hh,r);g.arcTo(x+w,y+hh,x,y+hh,r);g.arcTo(x,y+hh,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
 const hash=(x,y)=>((x*73856093)^(y*19349663))>>>0;
@@ -1035,8 +1052,8 @@ function startGrace(dir){if(dir){gDir=dir;gLeft=GRACE}}
 // Analog: just past the dead zone Ember walks slowly (35% speed), and reaches full speed when the thumb is DEAD+RAMP px out.
 function padUpdate(){let d=0,v=0,last=null;for(const q of padPtrs.values())last=q;if(last){const dx=last.x-last.ax,ad=Math.abs(dx);if(ad>DEAD){d=Math.sign(dx);v=d*(.35+.65*Math.min(1,(ad-DEAD)/RAMP))}}input.tl=d<0;input.tr=d>0;input.tv=v}
 pad.addEventListener('pointerdown',e=>{e.preventDefault();try{pad.setPointerCapture(e.pointerId)}catch(_){}padPtrs.delete(e.pointerId);
-  const carry=gLeft>0&&padPtrs.size===0?gDir:0;padPtrs.set(e.pointerId,{ax:e.clientX-carry*(DEAD+1),x:e.clientX});gLeft=0;padUpdate()});
-pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=e.clientX;const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;padUpdate()});
+  const carry=gLeft>0&&padPtrs.size===0?gDir:0;padPtrs.set(e.pointerId,{ax:px(e)-carry*(DEAD+1),x:px(e)});gLeft=0;padUpdate()});
+pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=px(e);const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;padUpdate()});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,e=>{const q=padPtrs.get(e.pointerId);if(!q)return;padPtrs.delete(e.pointerId);if(padPtrs.size===0)startGrace(padDir(q));padUpdate()}));
 const jb=$('#jumpBtn');
 jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCapture(e.pointerId)}catch(_){}input.tj=true;input.pressed=true;jb.classList.add('on')});
@@ -1426,21 +1443,21 @@ function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('peek
 function viewSize(back){modal(c=>{$('#modal').classList.add('peek');
   const read=h('p',{class:'zread'}),note=h('p',{class:'zread'});
   const sl=h('input',{type:'range',class:'zrange',min:'100',max:'200',step:'5',value:String(Math.round(zoom*100)),'aria-label':'View size'}),zl=h('span',{class:'zread'});
-  let upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${innerWidth}×${innerHeight}`;
+  let upd=()=>{sl.value=String(Math.round(zoom*100));read.innerHTML=`<b>${Math.round(zoom*100)}%</b> · Ember ${Math.round(26*scale)} px tall · ${(viewH/TS).toFixed(1)} of 15 rows on screen · screen ${appW()}×${appH()}`;
     note.textContent='Game log: '+(LOG.status()==='synced'?'saved and synced':'saved on this device')};
   sl.addEventListener('input',()=>{setZoom(+sl.value/100);upd()});const zrow=h('div',{class:'zrow'},zl,sl);
   const mk=(key,label)=>{const r=h('input',{type:'range',class:'zrange',min:'0',max:'80',step:'2',value:String(edges[key]),'aria-label':label}),o=h('span',{class:'zread'});
     const show=()=>{o.textContent=label+': '+edges[key]+' px'};r.addEventListener('input',()=>{edges[key]=+r.value;store.set('tf-edges',edges);applyEdges();show();upd()});show();
     return{row:h('div',{class:'zrow'},o,r),r,show}};
   const ex=mk('x','Side space'),et=mk('t','Top space');
-  const upd0=upd;upd=()=>{upd0();zl.textContent='Size: '+Math.round(zoom*100)+'%';read.innerHTML=`${Math.round(zoom*100)}% · sides ${edges.x} · top ${edges.t} · Ember ${Math.round(26*scale)} px · ${(viewH/TS).toFixed(1)} rows · ${innerWidth}×${innerHeight}`};upd();
+  const upd0=upd;upd=()=>{upd0();zl.textContent='Size: '+Math.round(zoom*100)+'%';read.innerHTML=`${Math.round(zoom*100)}% · sides ${edges.x} · top ${edges.t} · Ember ${Math.round(26*scale)} px · ${(viewH/TS).toFixed(1)} rows · ${appW()}×${appH()}`};upd();
   // hold a slider: the panel fades out so the whole screen can be judged; let go and it comes back
   const M=$('#modal');for(const row of[zrow,ex.row,et.row]){const r=row.querySelector('input');
     const on=()=>{M.classList.add('drag');row.classList.add('on')},off=()=>{M.classList.remove('drag');row.classList.remove('on')};
     r.addEventListener('pointerdown',on);r.addEventListener('touchstart',on,{passive:true});for(const ev of['pointerup','pointercancel','touchend','touchcancel','change'])r.addEventListener(ev,off)}
   document.body.classList.add('adjusting');
   c.append(h('h3',{text:'View size'}),h('p',{text:'Hold a slider and the panel fades so you can see the whole screen.'}),zrow,ex.row,et.row,read,
-    h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),side:edges.x,top:edges.t,w:innerWidth,h:innerHeight},true);closeModal();if(back)back()}},'Done'),
+    h('div',{class:'actions'},h('button',{class:'btn',onclick:()=>{LOG.add('zoom',{zoom:Math.round(zoom*100),side:edges.x,top:edges.t,w:appW(),h:appH()},true);closeModal();if(back)back()}},'Done'),
       h('button',{class:'btn ghost',onclick:()=>{zoomSet=null;store.set('tf-zoom',null);resize();edges={x:0,t:0};store.set('tf-edges',edges);applyEdges();ex.r.value='0';et.r.value='0';ex.show();et.show();upd()}},'Reset'),
       h('button',{class:'btn ghost',onclick:async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(LOG.text());b.textContent='Log copied'}catch(err){const ta=h('textarea',{readonly:'',style:'width:100%;height:120px;font-size:11px'});ta.value=LOG.text();c.append(ta);ta.select();b.textContent='Select and copy below'}}},'Copy game log')),note)})}
 
@@ -1544,7 +1561,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
   const HITS=[.6],HL=HITS[HITS.length-1],LAND=1.35,WAVE=.6,SA=.6,SB=.6,FLY0=1.75,FLY=.8;
   let W=800,H=480,k=1,state='wait',t0=0,last=0,raf=0,parts=[],shake=0,flash=0,ib=null,cued=false,landSq=0,seen={};
   if(isTouch===false)$('#introTap').textContent='Click or press any key to light the forge';
-  function size(){const d=Math.min(window.devicePixelRatio||1,2);cv.width=Math.max(1,innerWidth*d);cv.height=Math.max(1,innerHeight*d);k=cv.height/H;W=cv.width/k}
+  function size(){const d=Math.min(window.devicePixelRatio||1,2);cv.width=Math.max(1,appW()*d);cv.height=Math.max(1,appH()*d);k=cv.height/H;W=cv.width/k}
   addEventListener('resize',size);size();
   try{document.fonts&&document.fonts.load("96px 'Saira Stencil One'")}catch(e){}
   const rnd=(a,b)=>a+Math.random()*(b-a),clamp01=v=>v<0?0:v>1?1:v;
@@ -1572,8 +1589,8 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
   function tap(e){if(e)e.preventDefault();if(state==='wait'){ensureAudio();start()}else if(state==='run'&&(performance.now()-t0)>300)skip()}
   // where the title screen's logo words actually sit: centre x, baseline y and font size, in the intro's units
   function target(sel){const sp=document.querySelector(sel);if(!sp||!sp.firstChild)return null;const r=document.createRange();r.selectNodeContents(sp);const b=r.getBoundingClientRect();
-    const mk=document.createElement('span');mk.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';sp.appendChild(mk);const base=mk.getBoundingClientRect().top;mk.remove();
-    const u=H/innerHeight;return{x:(b.left+b.right)/2*u,y:base*u,f:parseFloat(getComputedStyle(sp).fontSize)*u}}
+    const mk=document.createElement('span');mk.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';sp.appendChild(mk);const mr=mk.getBoundingClientRect(),base=SIDE.on?appH()-mr.left:mr.top;mk.remove();
+    const u=H/appH();return{x:(SIDE.on?(b.top+b.bottom)/2:(b.left+b.right)/2)*u,y:base*u,f:parseFloat(getComputedStyle(sp).fontSize)*u}}
   el.addEventListener('pointerdown',tap);
   addEventListener('keydown',e=>{if(state==='done'||el.hidden)return;e.stopImmediatePropagation();e.preventDefault();tap()},true);
   // ---- drawing ----
@@ -1632,7 +1649,7 @@ const Intro=(()=>{const el=$('#intro'),cv=$('#introCvs'),g=cv.getContext('2d');
   raf=requestAnimationFrame(loop);
   return{get active(){return!el.hidden}}})();
 setScreen('menu');requestAnimationFrame(frame);
-LOG.add('boot',{w:innerWidth,h:innerHeight,dpr:window.devicePixelRatio||1,zoom:Math.round(zoom*100),side:edges.x,top:edges.t,touch:isTouch?1:0});
+LOG.add('boot',{w:appW(),h:appH(),dpr:window.devicePixelRatio||1,zoom:Math.round(zoom*100),side:edges.x,top:edges.t,touch:isTouch?1:0});
 })();
 </script>
 
