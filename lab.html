@@ -174,7 +174,7 @@ body.adjusting #hint{display:none}
 .p-world .top{font-size:13px;padding:3px 8px}
 .lgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start;min-height:0}
 .tile{display:flex;flex-direction:column;gap:4px;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,200,160,.08),rgba(255,200,160,.02));color:var(--ash);min-width:0;cursor:pointer;font:inherit;transition:transform .06s,border-color .15s}
-.tile:active:not([disabled]){transform:translateY(1px)}
+.tile:active:not(.locked){transform:translateY(1px)}
 .tile .t1{display:flex;align-items:baseline;gap:7px;min-width:0}
 .tile .code{font-family:var(--f-display);font-size:13px;color:var(--glow);flex:0 0 auto;letter-spacing:.02em}
 .tile .nm{font-family:var(--f-display);font-size:17px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:.02em}
@@ -210,6 +210,7 @@ html.rot #rotate{display:none!important}
         <button class="btn" id="mPlay">Ignite</button>
         <button class="btn ghost sm" id="mMute" aria-label="Toggle sound effects">Sound: on</button>
         <button class="btn ghost sm" id="mMusic" aria-label="Toggle music">Music: on</button>
+        <button class="btn ghost sm" id="mUi" aria-label="Toggle menu sounds">Menu sounds: on</button>
         <button class="btn ghost sm" id="mView">View size</button>
       </div>
       <p class="keys">Keyboard: ← → move · Space jump (hold for height) · Esc pause · R restart</p>
@@ -1387,7 +1388,8 @@ function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.
     h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),V.replay?null:h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx,false)},'Restart'),
       h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Title screen'),
       h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
-      h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off'))))})}
+      h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off')),
+      h('button',{class:'btn ghost',id:'pUi',onclick:e=>{toggleUiSfx();e.currentTarget.textContent=uiLabel()}},uiLabel())))})}
 function resume(){closeModal();if(V)V.paused=false;Music.duck(false)}
 $('#pauseBtn').addEventListener('click',()=>V&&(V.paused?resume():pause()));
 document.addEventListener('visibilitychange',()=>{Music.hide(document.hidden);if(document.hidden&&screen==='play'&&V&&!V.R.won&&!V.paused)pause()});
@@ -1462,7 +1464,7 @@ function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
   wt.append(h('span',{text:`World ${menuWorld+1} · ${Wd.name}`}),h('span',{class:'top',style:`background:${Wd.color}`,text:`Top ${Wd.top}%`}));
   LEVELS.forEach((L,i)=>{if(L.world!==menuWorld)return;const done=!!cleared[L.id],open=unlocked(i),b=best[L.id];
     const meta=done&&b?`Best ${fmtTime(b.t)}`:`Gold ${fmtTime(goldFrames(L))}`;
-    list.append(h('button',{class:'tile'+(done?' done':'')+(open?'':' locked')+(i===tgt&&open?' next':''),disabled:open?null:'','aria-label':`${L.code} ${L.name}${open?'':', locked'}`,onclick:()=>open&&startLevel(i,false)},
+    list.append(h('button',{class:'tile'+(done?' done':'')+(open?'':' locked')+(i===tgt&&open?' next':''),'aria-disabled':open?null:'true','aria-label':`${L.code} ${L.name}${open?'':', locked'}`,onclick:()=>open&&startLevel(i,false)},
       h('span',{class:'t1'},h('span',{class:'code',text:L.code}),h('span',{class:'nm',text:L.name})),
       h('span',{class:'t2'},open?h('span',{class:'meta',text:meta}):h('span',{class:'meta',text:'Locked'}),medalPips(L.id),open?h('span',{class:'play','aria-hidden':'true'}):null)))});
   $('#progress').textContent=`${n} / ${LEVELS.length}`;
@@ -1471,6 +1473,34 @@ $('#mPlay').addEventListener('click',()=>startLevel(playTarget(),false));
 $('#mMute').addEventListener('click',()=>{muted=!muted;store.set('tf-mute',muted);updateMuteBtn();ensureAudio();SFX.gem()});
 updateMuteBtn();
 $('#mMusic').addEventListener('click',()=>{Music.toggle();updateMusicBtn()});updateMusicBtn();
+/* ---------------- Menu sounds ----------------
+   Every choice on the title screen and in the pause and result menus makes a sound that says what it did:
+   go (start or resume a level), back (to the title), tick (switch world), thud (locked level), press (anything else),
+   and a rising or falling two-tone for switching a setting on or off. "Menu sounds" turns them off. */
+let uiSfx=store.get('tf-uisfx',true);
+const UISFX={press:()=>{tone(620,700,.06,'triangle',.05);tone(1240,1300,.08,'sine',.022,.03)},
+  go:()=>{hiss(.16,.03);tone(330,660,.16,'sawtooth',.028);tone(990,1320,.24,'triangle',.034,.06)},
+  back:()=>{tone(300,170,.14,'triangle',.055);tone(600,560,.2,'sine',.015,.02)},
+  tick:()=>{tone(1900,1700,.035,'square',.014);tone(950,930,.07,'triangle',.03)},
+  locked:()=>{tone(150,110,.14,'square',.03);tone(95,80,.16,'sine',.06)},
+  on:()=>{tone(660,880,.07,'triangle',.045);tone(1320,1330,.07,'sine',.022,.07)},
+  off:()=>{tone(880,560,.09,'triangle',.045)}};
+function uiSound(k){if(!uiSfx||muted)return;ensureAudio();(UISFX[k]||UISFX.press)()}
+function uiLabel(){return 'Menu sounds: '+(uiSfx?'on':'off')}
+function toggleUiSfx(){uiSfx=!uiSfx;store.set('tf-uisfx',uiSfx);const b=$('#mUi');if(b)b.textContent=uiLabel()}
+$('#mUi').addEventListener('click',toggleUiSfx);$('#mUi').textContent=uiLabel();
+// one listener, in the capture phase so it runs before the button's own action (which may close the menu)
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(!b||!b.closest('#menu,#modal'))return;const t=b.textContent.trim();
+  let k='press';
+  if(b.id==='mUi'||b.id==='pUi'){if(!uiSfx){uiSfx=true;uiSound('on');uiSfx=false}else uiSound('off');return}
+  if(b.id==='mMusic'||b.id==='pMusic')k=Music.on?'off':'on';
+  else if(b.id==='mMute'){if(!muted)uiSound('off');return}
+  else if(b.classList.contains('tile'))k=b.classList.contains('locked')?'locked':'go';
+  else if(b.classList.contains('wtab'))k='tick';
+  else if(b.id==='mPlay'||/^(Resume|Next|Try|Play|Restart|Again)/i.test(t))k='go';
+  else if(/^(Title screen|Menu|Quit)/i.test(t))k='back';
+  uiSound(k)},true);
+
 $('#mView').addEventListener('click',()=>viewSize());
 $('#buildTag').textContent='Hazard Lab prototype · lab1';
 
