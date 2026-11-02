@@ -1406,7 +1406,7 @@ function tick(){if(!V||V.paused)return;const R=V.R;
   if(R.won)return;
   let inp;
   if(V.replay){const a=V.replay[Math.floor(V.rf/K)];V.rf++;const[d,hd]=a==null?[0,0]:ACTS[a];inp={dir:d,held:!!hd,pressed:!!hd&&!V.prevHeld};V.prevHeld=!!hd}
-  else{let dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);if(gLeft>0){if(!dir&&padPtrs.size===0)dir=gDir;gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
+  else{let dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);if(gLeft>0){if(!dir&&padPtrs.size===0){if(V.R.p.onGround)gLeft=0;else dir=gDir}if(gLeft>0)gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
   const g0=R.gems,c0=R.check,res=step(R,inp);
   if(!V.replay){const lv=LEVELS[V.idx].code;
     if(res==='dead'){V.att=(V.att||1)+1;LOG.add('death',{lv,why:R.lastDeath,tx:Math.floor((R.p.x+R.p.w/2)/TS),ty:Math.floor((R.p.y+R.p.h/2)/TS),vy:+R.p.vy.toFixed(1),heat:Math.round(100*Math.max(0,R.heat)/R.heatMax),clk:R.clock})}
