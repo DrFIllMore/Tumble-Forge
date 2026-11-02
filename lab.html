@@ -156,6 +156,22 @@ body.adjusting #hint{display:none}
 /* short landscape screens (a phone, especially inside an app): tighter menu so every button fits */
 @media (max-height:440px){.logo{font-size:clamp(36px,11vh,64px)}.tag{font-size:14px;line-height:1.3}.pride{font-size:14px}.m-left{gap:8px}.m-actions .btn{padding:8px 12px;font-size:15px}.m-actions .btn.sm{padding:7px 10px;font-size:13px}#buildTag{font-size:11px}}
 @media (prefers-reduced-motion:reduce){#rotate .phone{animation:none;transform:rotate(-90deg)}}
+
+/* Title screen call to action: one big molten Ignite button that says which level it starts; settings sit quietly below */
+.m-cta{display:flex;margin-top:2px}
+#mPlay{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:min(330px,100%);padding:13px 64px 12px 22px;border-radius:12px;text-align:left;
+  background:linear-gradient(180deg,#ffe2a0 0%,#ff9a45 34%,#f0621a 72%,#d0420c 100%);color:#1a0a04;
+  box-shadow:0 5px 0 var(--molten-deep),inset 0 1px 0 rgba(255,245,220,.75),inset 0 -2px 0 rgba(120,30,0,.35),0 0 30px rgba(255,106,26,.42);animation:ctaGlow 2.6s ease-in-out infinite}
+#mPlay .go{font-family:var(--f-display);font-size:32px;line-height:.95;letter-spacing:.07em;text-transform:uppercase}
+#mPlay .sub{font-family:var(--f-ui);font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:rgba(46,14,3,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#mPlay::after{content:'';position:absolute;right:22px;top:50%;transform:translateY(-50%);border-left:17px solid #2a0d03;border-top:11px solid transparent;border-bottom:11px solid transparent;opacity:.85}
+#mPlay:active{transform:translateY(3px);box-shadow:0 2px 0 var(--molten-deep),inset 0 1px 0 rgba(255,245,220,.75),0 0 22px rgba(255,106,26,.35)}
+#mPlay:focus-visible{outline:2px solid var(--ash);outline-offset:3px}
+@keyframes ctaGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.08) drop-shadow(0 0 14px rgba(255,140,60,.5))}}
+.m-actions.m-sub{gap:6px;margin-top:6px}
+.m-actions.m-sub .btn.sm{font-family:var(--f-ui);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;background:rgba(255,220,190,.04);border:1px solid var(--line);color:var(--muted);box-shadow:none}
+@media (max-height:440px){#mPlay{padding:9px 54px 9px 18px;min-width:min(290px,100%)}#mPlay .go{font-size:25px}#mPlay .sub{font-size:12px}#mPlay::after{right:18px;border-left-width:14px;border-top-width:9px;border-bottom-width:9px}.m-actions.m-sub .btn.sm{font-size:12px;padding:5px 9px}}
+@media (prefers-reduced-motion:reduce){#mPlay{animation:none}}
 </style>
 
 <div id="app">
@@ -166,8 +182,8 @@ body.adjusting #hint{display:none}
       <h1 class="logo"><span class="a">TUMBLE</span><span class="b">FORGE</span></h1>
       <p class="tag">You are Ember, a spark loose in a foundry, cooling fast. Light braziers, grab coal and reach the furnace. World 1 is for the <b>top 5%</b> of players, World 5 for the <b>top 1%</b>. Beat the Forgemaster's times for gold.</p>
       <p class="pride" id="pride"></p>
-      <div class="m-actions">
-        <button class="btn" id="mPlay">Ignite</button>
+      <div class="m-cta"><button class="btn" id="mPlay" aria-describedby="mPlaySub"><span class="go">Ignite</span><span class="sub" id="mPlaySub">Start · 1-1 Cinder Path</span></button></div>
+      <div class="m-actions m-sub">
         <button class="btn ghost sm" id="mMute" aria-label="Toggle sound effects">Sound: on</button>
         <button class="btn ghost sm" id="mMusic" aria-label="Toggle music">Music: on</button>
         <button class="btn ghost sm" id="mView">View size</button>
@@ -1399,7 +1415,8 @@ function viewSize(back){modal(c=>{$('#modal').classList.add('peek');
       h('button',{class:'btn ghost',onclick:async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(LOG.text());b.textContent='Log copied'}catch(err){const ta=h('textarea',{readonly:'',style:'width:100%;height:120px;font-size:11px'});ta.value=LOG.text();c.append(ta);ta.select();b.textContent='Select and copy below'}}},'Copy game log')),note)})}
 
 /* ---------------- Menu ---------------- */
-function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
+function playTarget(){let i=LEVELS.findIndex((L,k)=>unlocked(k)&&!cleared[L.id]);return i<0?LEVELS.length-1:i}
+function renderMenu(){{const i=playTarget(),L=LEVELS[i],any=LEVELS.some(l=>cleared[l.id]),all=LEVELS.every(l=>cleared[l.id]);const sb=$('#mPlaySub');if(sb)sb.textContent=(all?'Replay':any?'Continue':'Start')+' · '+L.code+' '+L.name}const list=$('#levelList');list.innerHTML='';let n=0;
   WORLDS.forEach((Wd,w)=>{list.append(h('div',{class:'world'},h('span',{text:`World ${w+1} · ${Wd.name}`}),h('span',{class:'top',style:`background:${Wd.color}`,text:`Top ${Wd.top}%`})));
     LEVELS.forEach((L,i)=>{if(L.world!==w)return;const done=!!cleared[L.id],open=unlocked(i);if(done)n++;const b=best[L.id];
       const meta=done&&b?`Best ${fmtTime(b.t)} · gold under ${fmtTime(goldFrames(L))}`:open?`Gold under ${fmtTime(goldFrames(L))}`:'Clear the level before it to unlock';
@@ -1411,7 +1428,7 @@ function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
           null)))})});
   $('#progress').textContent=`${n} / ${LEVELS.length} cleared`;
   $('#pride').textContent=pride.total?`The forge has claimed Ember ${pride.total.toLocaleString()} time${pride.total===1?'':'s'}.`:'The forge has not claimed Ember yet.'}
-$('#mPlay').addEventListener('click',()=>{let i=LEVELS.findIndex((L,k)=>unlocked(k)&&!cleared[L.id]);if(i<0)i=LEVELS.length-1;startLevel(i,false)});
+$('#mPlay').addEventListener('click',()=>startLevel(playTarget(),false));
 $('#mMute').addEventListener('click',()=>{muted=!muted;store.set('tf-mute',muted);updateMuteBtn();ensureAudio();SFX.gem()});
 updateMuteBtn();
 $('#mMusic').addEventListener('click',()=>{Music.toggle();updateMusicBtn()});updateMusicBtn();
