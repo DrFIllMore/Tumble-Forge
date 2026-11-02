@@ -1,6 +1,6 @@
 # Tumble Forge
 
-A brutal five-level platformer for iPhone (played in landscape). You are **Ember**, a spark loose in a foundry, and you are cooling down. Light braziers and grab coal to keep your heat up, then reach the furnace at the end.
+A brutal platformer for iPhone across five worlds (played in landscape). Every level climbs and drops across raised floors, with each obstacle set on its own height. You are **Ember**, a spark loose in a foundry, and you are cooling down. Light braziers and grab coal to keep your heat up, then reach the furnace at the end.
 
 **Play:** https://drfillmore.github.io/Tumble-Forge/
 
