@@ -274,6 +274,7 @@ const GATE={
 function gate(L,x,k,coal){G(L,x,6);const s=x+6;const[e,ce]=GATE[k](L,s);if(coal)P(L,s+Math.floor((e-s-1)/2),k==='H'?9:11,'*');return G(L,e,Math.max(6,ce-e+2))}
 const SEC={
   '!':(L,x)=>{G(L,x,5);P(L,x+2,12,'!');return x+5},
+  '!-':(L,x)=>{G(L,x,5);return x+5},
   crumbles:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');P(L,x+6,10,'*');return x+13},
   springs:(L,x)=>{pit(L,x,x+19);for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,6,'*');return x+20},
   springsC:(L,x)=>{pit(L,x,x+25);for(const d of[2,8,14,20]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}F(L,x+1,x+25,4,4,'v');return x+26},
@@ -312,7 +313,7 @@ const SEC={
   singles:(L,x)=>{pit(L,x,x+30);F(L,x,x+30,4,4,'v');for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,8,'Q');F(L,x+19,x+22,8,8,'B');P(L,x+25,8,'U');P(L,x+28,8,'T');return x+31},
 };
 function course(name,items){const L=blank(name,900);let x=G(L,0,6);P(L,2,12,'S');
-  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
+  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!'&&prev!=='!-')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
   x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
   const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
 // Hazard sections. Tiles: J/K beat jet (opposite beats), W trap jet, < side jet, D ladle, N hanging anvil, E fire-biter, A slag balloon, H hunter drone
@@ -353,8 +354,8 @@ const LEVELS=[
   build(){return course('Crumble Climb',['chimCrumble','fireGap','!','bridgeCog*','trapGap','chimCrumble','!','jetPair','bridgeCog','fireGap2','H'])}},
  {id:'w1k',world:0,code:'1-9',heat:1560,fm:1593,name:'Trap Row',intro:'Trap jets and cogs, back to back.',
   build(){return course('Trap Row',['movers','trapGap','!','chimCog*','trapGap','fireGap2','!','bridgeCog','movers','jetPair','E1'])}},
- {id:'f1',world:0,code:'1-10',finale:true,heat:1800,fm:3151,name:'Slag Run',intro:'The World 1 finale. Every move you have learned, now two at a time.',
-  build(){return course('Slag Run',['E1','springRoof*','jetGap','H','!','chimCrumble*','fireGap','M2','E1','chimCog','!','H','bridgeCog*','trapGap','springRoof','!','chimCog*','H','jetPair','bridgeCog','fireGap2','E2'])}},
+ {id:'f1',world:0,code:'1-10',finale:true,heat:2700,fm:3151,name:'Slag Run',intro:'The World 1 finale. Every move you have learned, now two at a time.',
+  build(){return course('Slag Run',['E1','springRoof*','jetGap','H','!','chimCrumble*','fireGap','M2','E1','chimCog','!-','H','bridgeCog*','trapGap','springRoof','!','chimCog*','H','jetPair','bridgeCog','fireGap2','E2'])}},
  {id:'w2a',world:1,code:'2-1',heat:1320,fm:1167,name:'Steam Vents',intro:'Steam vents always throw you the same height. You cannot jump higher off one, so steer in the air.',
   build(){return course('Steam Vents',['E2','springs','jetGap','!','springs','sideJet','H*','M2'])}},
  {id:'w2b',world:1,code:'2-2',heat:1320,fm:1346,name:'Vent Ceiling',intro:'Spikes over the vents. The throw is always the same, so where you land is all in your steering.',
@@ -373,10 +374,10 @@ const LEVELS=[
   build(){return course('Piston Works',['springs','pistonPit','!','ventCog*','pistonPit','sideJet','!','ladlePits','pistonPit','M2'])}},
  {id:'w2i',world:1,code:'2-9',heat:1440,fm:1736,name:'Side Furnace',intro:'Side jets on the hammer beat.',
   build(){return course('Side Furnace',['sideJet','timed','!','sideLow*','ventBeat','fireGap2','!','timed','sideJet','pistonPit','E1'])}},
- {id:'f2',world:1,code:'2-10',finale:true,heat:1980,fm:3327,name:'Bellows',intro:'The World 2 finale. Vents, cogs and the hammer beat, now together.',
-  build(){return course('Bellows',['springsC','H','ventCog*','Hp','!','ventBeat*','sideJet','chimSaw','!','pistonPit','cogLedges*','hookPit','springsCO','!','X','ladlePits','ventCog','fireGap2','H','E1'])}},
- {id:'f3',world:2,code:'3-1',finale:true,heat:2340,fm:4783,name:'Trip Hammer',intro:'Molten plates are solid for one hammer beat and cold plates for the next. They flicker before they drop.',
-  build(){return course('Trip Hammer',['timed','X','Hp','H','moversC','trapGap','!','balloonRun','chimSaw','X','X','H','lavaBiters','!','Hp','timed','Xp','pistonPit','Hp','vent','!','X','chimDesc','lavaBiters','fireGap2','Hp','H','M2'])}},
+ {id:'f2',world:1,code:'2-10',finale:true,heat:2460,fm:3327,name:'Bellows',intro:'The World 2 finale. Vents, cogs and the hammer beat, now together.',
+  build(){return course('Bellows',['springsC','H','ventCog*','Hp','!','ventBeat*','sideJet','chimSaw','!-','pistonPit','cogLedges*','hookPit','springsCO','!','X','ladlePits','ventCog','fireGap2','H','E1'])}},
+ {id:'f3',world:2,code:'3-1',finale:true,heat:4200,fm:4783,name:'Trip Hammer',intro:'Molten plates are solid for one hammer beat and cold plates for the next. They flicker before they drop.',
+  build(){return course('Trip Hammer',['timed','X','Hp','H','moversC','trapGap','!-','balloonRun','chimSaw','X','X','H','lavaBiters','!','Hp','timed','Xp','pistonPit','Hp','vent','!','X','chimDesc','lavaBiters','fireGap2','Hp','H','M2'])}},
  {id:'f4',world:3,code:'4-1',finale:true,heat:3060,fm:4078,name:'Quench',intro:'Oil keeps you sliding. Spikes overhead mean short taps only. Two braziers for the whole run.',
   build(){return course('Quench',['oil','X','X','Hp','Xp','!','huntRun','chimDesc','Y','X','Hp','H','!','oilCogs','hookPit','pistonPit','Xp','X','Hp','sideJet','fireGap2','springsCO','Y'])}},
  {id:'f5',world:4,code:'5-1',finale:true,heat:3120,fm:4509,name:'Crucible',intro:'Two braziers. The tightest jumps in the foundry, back to back, with heat to spare for almost nothing.',
@@ -550,7 +551,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-01 v37';
+const BUILD='2026-11-01 v38';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,

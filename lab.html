@@ -274,6 +274,7 @@ const GATE={
 function gate(L,x,k,coal){G(L,x,6);const s=x+6;const[e,ce]=GATE[k](L,s);if(coal)P(L,s+Math.floor((e-s-1)/2),k==='H'?9:11,'*');return G(L,e,Math.max(6,ce-e+2))}
 const SEC={
   '!':(L,x)=>{G(L,x,5);P(L,x+2,12,'!');return x+5},
+  '!-':(L,x)=>{G(L,x,5);return x+5},
   crumbles:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');P(L,x+6,10,'*');return x+13},
   springs:(L,x)=>{pit(L,x,x+19);for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,6,'*');return x+20},
   springsC:(L,x)=>{pit(L,x,x+25);for(const d of[2,8,14,20]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}F(L,x+1,x+25,4,4,'v');return x+26},
@@ -312,7 +313,7 @@ const SEC={
   singles:(L,x)=>{pit(L,x,x+30);F(L,x,x+30,4,4,'v');for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,8,'Q');F(L,x+19,x+22,8,8,'B');P(L,x+25,8,'U');P(L,x+28,8,'T');return x+31},
 };
 function course(name,items){const L=blank(name,900);let x=G(L,0,6);P(L,2,12,'S');
-  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
+  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!'&&prev!=='!-')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
   x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
   const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
 // Hazard sections. Tiles: J/K beat jet (opposite beats), W trap jet, < side jet, D ladle, N hanging anvil, E fire-biter, A slag balloon, H hunter drone
