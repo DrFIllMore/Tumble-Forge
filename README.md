@@ -36,6 +36,8 @@ New hazards by world (every one warns before it can hurt you, and behaves the sa
 | 1 | Beat jets (flame columns in the gaps on the hammer beat), trap jets (fire when you come close) |
 | 2 | Side jets, the ladle (pours slag on a rhythm), hanging anvils (drop, rest, get hauled back up) |
 | 3 | Fire-biters (chomping heads that leap from the lava), the slag balloon (drops cinders from its basket) |
+| 1 onward | Flame balls that shoot up out of gaps and fall back (single, or two taking turns) |
+| 2 onward | Piston pillars that rise and sink out of the lava in a wave; ride them across |
 | 4–5 | The hunter drone (follows you and drops when it is overhead), mixed with everything above |
 
 Each world's finale ends with its own celebration and music.
