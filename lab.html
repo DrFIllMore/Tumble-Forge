@@ -273,6 +273,21 @@ function course(name,items){const L=blank(name,900);let x=G(L,0,6);P(L,2,12,'S')
   let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
   x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
   const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
+// Hazard sections. Tiles: J/K beat jet (opposite beats), W trap jet, < side jet, D ladle, N hanging anvil, E fire-biter, A slag balloon, H hunter drone
+Object.assign(SEC,{
+  jetGap:(L,x,coal)=>{pit(L,x,x+3);P(L,x+2,14,'J');if(coal)P(L,x+1,10,'*');return x+4},
+  jetPair:(L,x,coal)=>{pit(L,x,x+3);P(L,x+2,14,'J');G(L,x+4,2);pit(L,x+6,x+9);P(L,x+8,14,'K');if(coal)P(L,x+5,9,'*');return x+10},
+  trapGap:(L,x,coal)=>{pit(L,x,x+3);P(L,x+2,14,'W');if(coal)P(L,x+1,10,'*');return x+4},
+  sideJet:(L,x,coal)=>{G(L,x,10);F(L,x+6,x+7,11,12,'B');P(L,x+6,11,'<');if(coal)P(L,x+7,10,'*');return x+10},
+  sideLow:(L,x,coal)=>{G(L,x,10);F(L,x+6,x+7,12,12,'B');P(L,x+6,12,'<');F(L,x+1,x+5,9,9,'v');if(coal)P(L,x+8,11,'*');return x+10},
+  ladleRun:(L,x,coal)=>{G(L,x,12);P(L,x+2,7,'D');if(coal)P(L,x+6,11,'*');return x+12},
+  ladlePits:(L,x,coal)=>{G(L,x,2);pit(L,x+2,x+4);G(L,x+5,2);pit(L,x+7,x+9);G(L,x+10,3);P(L,x+2,7,'D');if(coal)P(L,x+6,11,'*');return x+13},
+  hookFloor:(L,x,coal)=>{G(L,x,12);P(L,x+4,6,'N');P(L,x+8,6,'N');if(coal)P(L,x+6,11,'*');return x+12},
+  hookPit:(L,x,coal)=>{pit(L,x,x+6);P(L,x+3,6,'N');if(coal)P(L,x+3,10,'*');return x+7},
+  lavaBiters:(L,x,coal)=>{pit(L,x,x+11);F(L,x+3,x+3,12,14,'#');F(L,x+7,x+7,12,14,'#');P(L,x+1,14,'E');P(L,x+5,14,'E');P(L,x+9,14,'E');if(coal)P(L,x+7,10,'*');return x+12},
+  balloonRun:(L,x,coal)=>{G(L,x,16);pit(L,x+5,x+6);pit(L,x+11,x+12);P(L,x+3,7,'A');if(coal)P(L,x+9,11,'*');return x+16},
+  huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
+});
 const SEC2={
   jetGap:(L,x)=>{pit(L,x,x+3);P(L,x+2,14,'J');return x+4},
   jetPair:(L,x)=>{pit(L,x,x+3);P(L,x+2,14,'J');G(L,x+4,2);pit(L,x+6,x+9);P(L,x+8,14,'K');return x+10},
@@ -1320,6 +1335,8 @@ const medals=store.get('tflab3-medals',{});
 if(!store.get('tflab3-f1v2',false)){delete best.f1;delete medals.f1;store.set('tflab3-best',best);store.set('tflab3-medals',medals);store.set('tflab3-f1v2',true)}
 // 2-7 (was 2-1) was rebuilt the same way
 if(!store.get('tflab3-f2v2',false)){delete best.f2;delete medals.f2;store.set('tflab3-best',best);store.set('tflab3-medals',medals);store.set('tflab3-f2v2',true)}
+// every level was rebuilt with the new hazards: old best times and medals no longer apply (unlocks are kept)
+if(!store.get('tflab3-hz1',false)){for(const k of Object.keys(best))delete best[k];for(const k of Object.keys(medals))delete medals[k];store.set('tflab3-best',best);store.set('tflab3-medals',medals);store.set('tflab3-hz1',true)}
 const goldFrames=L=>Math.ceil((L.fm||0)*1.10/6)*6;
 function medalPips(id){const m=medals[id]||{},n=['i','s','g'].filter(k=>m[k]).length;return h('span',{class:'pips',role:'img','aria-label':`${n} of 3 medals`},...['i','s','g'].map(k=>h('span',{class:`medal ${k}${m[k]?' on':''}`})))}
 function medalRow(L,R){const M=V.medalResult||{has:{},fresh:[]};

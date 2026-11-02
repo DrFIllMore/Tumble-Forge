@@ -29,6 +29,15 @@ If you hear no music, check the ring/silent switch: iOS mutes web audio while th
 | 4 · Quench | 4-1 Quench | Top 2% |
 | 5 · Crucible | 5-1 Crucible | Top 1% |
 
+New hazards by world (every one warns before it can hurt you, and behaves the same on every run):
+
+| World | Hazards |
+|-------|---------|
+| 1 | Beat jets (flame columns in the gaps on the hammer beat), trap jets (fire when you come close) |
+| 2 | Side jets, the ladle (pours slag on a rhythm), hanging anvils (drop, rest, get hauled back up) |
+| 3 | Fire-biters (chomping heads that leap from the lava), the slag balloon (drops cinders from its basket) |
+| 4–5 | The hunter drone (follows you and drops when it is overhead), mixed with everything above |
+
 Each world's finale ends with its own celebration and music.
 
 ## Medals
