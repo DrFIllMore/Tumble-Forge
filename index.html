@@ -334,54 +334,72 @@ Object.assign(SEC,{
   pistonPit:(L,x,coal)=>{pit(L,x,x+13);for(const d of[2,6,10]){P(L,x+d,13,'P');P(L,x+d+1,13,'P')}if(coal)P(L,x+7,8,'*');return x+14},
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
 });
+
+/* Terrain builder. Each obstacle is built on its own, then lifted onto a floor height chosen by a seeded walk
+   (up or down 2 to 4 rows at a time, never higher than the obstacle has room for). Neighbouring heights are joined
+   by a short staircase going up (2 rows per step) or a drop going down, so routes climb and fall instead of
+   running along one floor. Ground under a lifted obstacle is filled in; lava pits keep their lava on top. */
+function seeded(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return()=>{h=(Math.imul(h,1664525)+1013904223)>>>0;return h/4294967296}}
+function piece(it,coal){const T=blank('t',140);const w=GATE[it]?gate(T,0,it,coal):SEC[it](T,0,coal);let r0=15;
+  for(let y=0;y<ROWS;y++)for(let x=0;x<w;x++)if(T.grid[y*T.w+x]!=='.'){if(y<r0)r0=y;break}return{T,w,r0}}
+function lift(L,X,S,k){const T=S.T;for(let c=0;c<S.w;c++){for(let y=0;y<ROWS;y++){const ch=T.grid[y*T.w+c];if(ch!=='.'&&y-k>=0)L.grid[(y-k)*L.w+X+c]=ch}
+    if(k>0){const bot=T.grid[(ROWS-1)*T.w+c];if(bot==='^')L.grid[(ROWS-1-k)*L.w+X+c]='~';if(bot!=='.')for(let y=ROWS-k;y<ROWS;y++)L.grid[y*L.w+X+c]=bot==='B'?'B':'#'}}return X+S.w}
+function joinTo(L,x,fa,fb){const col=(x,f)=>F(L,x,x+1,f,ROWS-1,'#');col(x,fa);x+=2;
+  if(fb<fa){let f=fa;while(f-2>fb){f-=2;col(x,f);x+=2}col(x,fb);x+=2}else if(fb>fa){col(x,fb);x+=2}return x}
+function terrain(name,items){const L=blank(name,1600);let x=G(L,0,6);P(L,2,12,'S');let f=13;const rnd=seeded(name);
+  for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;const S=piece(it,coal);const maxK=Math.max(0,Math.min(8,S.r0-1));
+    const k=13-f;let nk=0;if(maxK>0){const steps=[-4,-3,-2,2,3,4];for(let t=0;t<16;t++){nk=k+steps[Math.floor(rnd()*steps.length)];if(nk>=0&&nk<=maxK)break;nk=-1}if(nk<0)nk=Math.min(maxK,k)}
+    const nf=13-nk;x=joinTo(L,x,f,nf);x=lift(L,x,S,nk);f=nf}
+  x=joinTo(L,x,f,13);x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
+  const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
 const WORLDS=[{name:'Slag Run',top:5,color:'#ffc15e'},{name:'Bellows',top:4,color:'#ffa04a'},{name:'Trip Hammer',top:3,color:'#ff7a2a'},{name:'Quench',top:2,color:'#ff5a2a'},{name:'Crucible',top:1,color:'#ff3b30'}];
 const LEVELS=[
  {id:'w1ab',world:0,code:'1-1',heat:1440,fm:1603,name:'Cinder Path',intro:'You lose heat every second. Braziers refill it and coal adds a little. Hold jump longer to jump higher.',
-  build(){return course('Cinder Path',['E2','crumbles','!','E1*','jetGap','springs','!','E1*','crumbles','jetPair','E2*','M2'])}},
+  build(){return terrain('Cinder Path',['E2','crumbles','!','E1*','jetGap','springs','!','E1*','crumbles','jetPair','E2*','M2'])}},
  {id:'w1cd',world:0,code:'1-2',heat:1740,fm:1788,name:'Slag Bridges',intro:'Spikes overhead mean short taps. Slag crumbles a moment after you land on it.',
-  build(){return course('Slag Bridges',['E1','hops','!','M2*','fireGap','jetGap','crumbles','!','jetGap*','springs','H','crumbles','jetPair','E2'])}},
+  build(){return terrain('Slag Bridges',['E1','hops','!','M2*','fireGap','jetGap','crumbles','!','jetGap*','springs','H','crumbles','jetPair','E2'])}},
  {id:'w1g',world:0,code:'1-3',heat:1200,fm:1661,name:'Flare Gaps',intro:'Flame jets and flame balls share the gaps.',
-  build(){return course('Flare Gaps',['jetGap','E1','fireGap','!','jetPair','crumbles','fireGap','M2*','!','springs','fireGap2','hops','E2'])}},
+  build(){return terrain('Flare Gaps',['jetGap','E1','fireGap','!','jetPair','crumbles','fireGap','M2*','!','springs','fireGap2','hops','E2'])}},
  {id:'w1e',world:0,code:'1-4',heat:1740,fm:1302,name:'The Chimney',intro:'Jump into a wall, then jump again to spring off it. That is how you climb a chimney.',
-  build(){return course('The Chimney',['H','chim','!','trapGap','M2','chim','jetGap','M3*','H'])}},
+  build(){return terrain('The Chimney',['H','chim','!','trapGap','M2','chim','jetGap','M3*','H'])}},
  {id:'w1h',world:0,code:'1-5',heat:1260,fm:1584,name:'Tap Hops',intro:'Low ceilings, short hops and a trap jet.',
-  build(){return course('Tap Hops',['hops','trapGap','!','E1*','hops','jetGap','M3','!','crumbles','fireGap','hops','H'])}},
+  build(){return terrain('Tap Hops',['hops','trapGap','!','E1*','hops','jetGap','M3','!','crumbles','fireGap','hops','H'])}},
  {id:'w1f',world:0,code:'1-6',heat:1620,fm:1425,name:'Cog Run',intro:'Cogs on rails keep a fixed beat. Watch one cycle, then go.',
-  build(){return course('Cog Run',['movers','fireGap','H*','!','trapGap','ledges','jetPair','fireGap','M3','H*'])}},
+  build(){return terrain('Cog Run',['movers','fireGap','H*','!','trapGap','ledges','jetPair','fireGap','M3','H*'])}},
  {id:'w1i',world:0,code:'1-7',heat:1080,fm:1431,name:'Spring Furnace',intro:'Steam vents under spikes, with fire in the gaps.',
-  build(){return course('Spring Furnace',['springs','jetGap','!','springRoof*','fireGap','springs','!','jetPair','springRoof','E2'])}},
+  build(){return terrain('Spring Furnace',['springs','jetGap','!','springRoof*','fireGap','springs','!','jetPair','springRoof','E2'])}},
  {id:'w1j',world:0,code:'1-8',heat:1200,fm:1488,name:'Crumble Climb',intro:'Climb a crumbling chimney, then cross the cog bridge.',
-  build(){return course('Crumble Climb',['chimCrumble','fireGap','!','bridgeCog*','trapGap','chimCrumble','!','jetPair','bridgeCog','fireGap2','H'])}},
+  build(){return terrain('Crumble Climb',['chimCrumble','fireGap','!','bridgeCog*','trapGap','chimCrumble','!','jetPair','bridgeCog','fireGap2','H'])}},
  {id:'w1k',world:0,code:'1-9',heat:1560,fm:1593,name:'Trap Row',intro:'Trap jets and cogs, back to back.',
-  build(){return course('Trap Row',['movers','trapGap','!','chimCog*','trapGap','fireGap2','!','bridgeCog','movers','jetPair','E1'])}},
+  build(){return terrain('Trap Row',['movers','trapGap','!','chimCog*','trapGap','fireGap2','!','bridgeCog','movers','jetPair','E1'])}},
  {id:'f1',world:0,code:'1-10',finale:true,heat:2700,fm:3151,name:'Slag Run',intro:'The World 1 finale. Every move you have learned, now two at a time.',
-  build(){return course('Slag Run',['E1','springRoof*','jetGap','H','!','chimCrumble*','fireGap','M2','E1','chimCog','!-','H','bridgeCog*','trapGap','springRoof','!','chimCog*','H','jetPair','bridgeCog','fireGap2','E2'])}},
+  build(){return terrain('Slag Run',['E1','springRoof*','jetGap','H','!','chimCrumble*','fireGap','M2','E1','chimCog','!-','H','bridgeCog*','trapGap','springRoof','!','chimCog*','H','jetPair','bridgeCog','fireGap2','E2'])}},
  {id:'w2a',world:1,code:'2-1',heat:1320,fm:1167,name:'Steam Vents',intro:'Steam vents always throw you the same height. You cannot jump higher off one, so steer in the air.',
-  build(){return course('Steam Vents',['E2','springs','jetGap','!','springs','sideJet','H*','M2'])}},
+  build(){return terrain('Steam Vents',['E2','springs','jetGap','!','springs','sideJet','H*','M2'])}},
  {id:'w2b',world:1,code:'2-2',heat:1320,fm:1346,name:'Vent Ceiling',intro:'Spikes over the vents. The throw is always the same, so where you land is all in your steering.',
-  build(){return course('Vent Ceiling',['sideJet','springsC','H*','!','springsCO','ladleRun','Hp','E1'])}},
+  build(){return terrain('Vent Ceiling',['sideJet','springsC','H*','!','springsCO','ladleRun','Hp','E1'])}},
  {id:'w2c',world:1,code:'2-3',heat:1740,fm:1553,name:'Rail Cogs',intro:'Cogs on rails keep a fixed beat. Count it once, then go.',
-  build(){return course('Rail Cogs',['movers','H*','ladlePits','!','pistonPit','moversC','M2*','fireGap2','Hp','E2'])}},
+  build(){return terrain('Rail Cogs',['movers','H*','ladlePits','!','pistonPit','moversC','M2*','fireGap2','Hp','E2'])}},
  {id:'w2d',world:1,code:'2-4',heat:1320,fm:1359,name:'Saw Chimney',intro:'A saw waits inside this chimney. Climb on the wall away from it.',
-  build(){return course('Saw Chimney',['H','chim','hookFloor','M2*','!','chimSaw','Hp','hookPit'])}},
+  build(){return terrain('Saw Chimney',['H','chim','hookFloor','M2*','!','chimSaw','Hp','hookPit'])}},
  {id:'w2e',world:1,code:'2-5',heat:1800,fm:1569,name:'First Beat',intro:'Molten plates are solid for one hammer beat, cold plates for the next. Listen for the hammer.',
-  build(){return course('First Beat',['timed','jetPair','fireGap2*','!','Hp','timed','sideLow','X','E2'])}},
+  build(){return terrain('First Beat',['timed','jetPair','fireGap2*','!','Hp','timed','sideLow','X','E2'])}},
  {id:'w2f',world:1,code:'2-6',heat:2100,fm:1776,name:'High Ledges',intro:'Thin ledges you can jump up through. A saw guards the top.',
-  build(){return course('High Ledges',['ledges','hookPit','Hp','!','pistonPit','X','ledges','ladleRun','M3*','H'])}},
+  build(){return terrain('High Ledges',['ledges','hookPit','Hp','!','pistonPit','X','ledges','ladleRun','M3*','H'])}},
  {id:'w2g',world:1,code:'2-7',heat:1080,fm:1215,name:'Anvil Row',intro:'Anvils overhead and under the ladle.',
-  build(){return course('Anvil Row',['hookFloor','fireGap','!','hookPit','ladleRun','hookPit*','!','hookFloor','sideJet','hookPit','E2'])}},
+  build(){return terrain('Anvil Row',['hookFloor','fireGap','!','hookPit','ladleRun','hookPit*','!','hookFloor','sideJet','hookPit','E2'])}},
  {id:'w2h',world:1,code:'2-8',heat:1020,fm:1533,name:'Piston Works',intro:'Ride the pistons between the vents.',
-  build(){return course('Piston Works',['springs','pistonPit','!','ventCog*','pistonPit','sideJet','!','ladlePits','pistonPit','M2'])}},
+  build(){return terrain('Piston Works',['springs','pistonPit','!','ventCog*','pistonPit','sideJet','!','ladlePits','pistonPit','M2'])}},
  {id:'w2i',world:1,code:'2-9',heat:1440,fm:1736,name:'Side Furnace',intro:'Side jets on the hammer beat.',
-  build(){return course('Side Furnace',['sideJet','timed','!','sideLow*','ventBeat','fireGap2','!','timed','sideJet','pistonPit','E1'])}},
+  build(){return terrain('Side Furnace',['sideJet','timed','!','sideLow*','ventBeat','fireGap2','!','timed','sideJet','pistonPit','E1'])}},
  {id:'f2',world:1,code:'2-10',finale:true,heat:2460,fm:3327,name:'Bellows',intro:'The World 2 finale. Vents, cogs and the hammer beat, now together.',
-  build(){return course('Bellows',['springsC','H','ventCog*','Hp','!','ventBeat*','sideJet','chimSaw','!-','pistonPit','cogLedges*','hookPit','springsCO','!','X','ladlePits','ventCog','fireGap2','H','E1'])}},
+  build(){return terrain('Bellows',['springsC','H','ventCog*','Hp','!','ventBeat*','sideJet','chimSaw','!-','pistonPit','cogLedges*','hookPit','springsCO','!','X','ladlePits','ventCog','fireGap2','H','E1'])}},
  {id:'f3',world:2,code:'3-1',finale:true,heat:4200,fm:4783,name:'Trip Hammer',intro:'Molten plates are solid for one hammer beat and cold plates for the next. They flicker before they drop.',
-  build(){return course('Trip Hammer',['timed','X','Hp','H','moversC','trapGap','!-','balloonRun','chimSaw','X','X','H','lavaBiters','!','Hp','timed','Xp','pistonPit','Hp','vent','!','X','chimDesc','lavaBiters','fireGap2','Hp','H','M2'])}},
+  build(){return terrain('Trip Hammer',['timed','X','Hp','H','moversC','trapGap','!-','balloonRun','chimSaw','X','X','H','lavaBiters','!','Hp','timed','Xp','pistonPit','Hp','vent','!','X','chimDesc','lavaBiters','fireGap2','Hp','H','M2'])}},
  {id:'f4',world:3,code:'4-1',finale:true,heat:3060,fm:4078,name:'Quench',intro:'Oil keeps you sliding. Spikes overhead mean short taps only. Two braziers for the whole run.',
-  build(){return course('Quench',['oil','X','X','Hp','Xp','!','huntRun','chimDesc','Y','X','Hp','H','!','oilCogs','hookPit','pistonPit','Xp','X','Hp','sideJet','fireGap2','springsCO','Y'])}},
+  build(){return terrain('Quench',['oil','X','X','Hp','Xp','!','huntRun','chimDesc','Y','X','Hp','H','!','oilCogs','hookPit','pistonPit','Xp','X','Hp','sideJet','fireGap2','springsCO','Y'])}},
  {id:'f5',world:4,code:'5-1',finale:true,heat:3120,fm:4509,name:'Crucible',intro:'Two braziers. The tightest jumps in the foundry, back to back, with heat to spare for almost nothing.',
-  build(){return course('Crucible',['hops','chim1','X','Xp','trapGap','Hp','X','!','huntRun','oilCogs','Z','singles','X','Hp','!','lavaBiters','Y','Xp','pistonPit','vent','ladlePits','fireGap2','X','Hp','X'])}},
+  build(){return terrain('Crucible',['hops','chim1','X','Xp','trapGap','Hp','X','!','huntRun','oilCogs','Z','singles','X','Hp','!','lavaBiters','Y','Xp','pistonPit','vent','ladlePits','fireGap2','X','Hp','X'])}},
 ];
 /*LEVELS-END*/
 const clampN=(v,a,b)=>v<a?a:v>b?b:v;
@@ -450,6 +468,7 @@ function step(R,inp){
   const tx0=Math.floor(p.x/TS),tx1=Math.floor((p.x+p.w)/TS),ty0=Math.floor(p.y/TS),ty1=Math.floor((p.y+p.h)/TS)+3;
   for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const c=tileAt(R,tx,ty),X=tx*TS,Y=ty*TS;
     if(c==='^'&&hit(hx,hy,hw,hh,X+4,Y+14,24,18))return die(R,ty===ROWS-1?'melt':'hit');
+    if(c==='~'&&hit(hx,hy,hw,hh,X+4,Y+14,24,18))return die(R,'melt');
     if(c==='v'&&hit(hx,hy,hw,hh,X+4,Y,24,18))return die(R,'hit');
     if(c==='X'){const cx=X+16,cy=Y+16,nx=clampN(cx,hx,hx+hw),ny=clampN(cy,hy,hy+hh);if((cx-nx)*(cx-nx)+(cy-ny)*(cy-ny)<169)return die(R,'hit')}
     if(c==='*'&&!R.noGems&&hit(p.x,p.y,p.w,p.h,X+7,Y+7,18,18)){R.grid[ty*R.w+tx]='.';R.gems++;R.heat=Math.min(R.heatMax,R.heat+COAL_HEAT);R.fx.gem(R,X+16,Y+16)}
@@ -475,16 +494,16 @@ const HZ_CH='JKW<>DNAHEFLP';
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
 function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[]};let any=false;
   for(let i=0;i<R.grid.length;i++){const ch=R.grid[i];if(ch==='.'||!HZ_CH.includes(ch))continue;any=true;const tx=i%R.w,ty=(i/R.w)|0,X=tx*TS,Y=ty*TS;
-    if(ch==='J'||ch==='K'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:ch==='J'?0:60,trap:false,st:0,t:0});R.grid[i]='^';R.hasTimed=true}
-    else if(ch==='W'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:0,trap:true,st:0,t:0});R.grid[i]='^'}
+    if(ch==='J'||ch==='K'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:ch==='J'?0:60,trap:false,st:0,t:0});R.grid[i]=ty===ROWS-1?'^':'~';R.hasTimed=true}
+    else if(ch==='W'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:0,trap:true,st:0,t:0});R.grid[i]=ty===ROWS-1?'^':'~'}
     else if(ch==='<'||ch==='>'){const d=ch==='>'?1:-1;hz.jets.push({x:d>0?X+TS:X,y:Y+16,dir:d,len:4*TS,ph:0,trap:false,st:0,t:0});R.grid[i]='B';R.hasTimed=true}
     else if(ch==='D'){hz.ladles.push({x0:X+16,y:Y+12,span:6*TS,per:240,every:48,off:0});R.grid[i]='.'}
     else if(ch==='N'){hz.hooks.push({x:X+16,y:Y+16,home:Y+16,st:0,t:0,vy:0,idx:-1});R.grid[i]='.'}
     else if(ch==='A'){hz.crows.push({hunt:false,x0:X+16,y0:Y+16,span:8*TS,per:300,every:64,off:(tx*13)%64});R.grid[i]='.'}
     else if(ch==='H'){hz.crows.push({hunt:true,x:X+16,y:Y+16,hx:X+16,hy:Y+16,vx:0,cd:40,warn:0,lo:X-10*TS,hi:X+40*TS});R.grid[i]='.'}
-    else if(ch==='F'||ch==='L'){hz.cinders.push({x:X+16,base:Y+12,ph:((tx*37)+(ch==='L'?75:0))%150,per:150,ball:true});R.grid[i]='^'}
-    else if(ch==='P'){const last=hz.pistons[hz.pistons.length-1];if(last&&last.row===ty&&last.x+last.w===X)last.w+=TS;else hz.pistons.push({x:X,w:TS,row:ty,lo:VH-32,hi:VH-160,per:180,ph:(hz.pistons.length*60)%180});R.grid[i]='.'}
-    else if(ch==='E'){hz.cinders.push({x:X+16,base:Y+12,ph:(tx*37)%150,per:150});R.grid[i]='^'}}
+    else if(ch==='F'||ch==='L'){hz.cinders.push({x:X+16,base:Y+12,ph:((tx*37)+(ch==='L'?75:0))%150,per:150,ball:true});R.grid[i]=ty===ROWS-1?'^':'~'}
+    else if(ch==='P'){const last=hz.pistons[hz.pistons.length-1];if(last&&last.row===ty&&last.x+last.w===X)last.w+=TS;else hz.pistons.push({x:X,w:TS,row:ty,lo:(ty+1)*TS,hi:(ty-3)*TS,per:180,ph:(hz.pistons.length*60)%180});R.grid[i]='.'}
+    else if(ch==='E'){hz.cinders.push({x:X+16,base:Y+12,ph:(tx*37)%150,per:150});R.grid[i]=ty===ROWS-1?'^':'~'}}
   R.hz=any?hz:null;R.hzN=new Set()}
 /* Piston pillars: a steel column rising and sinking out of the lava. Its top glides between 1 block under the floor
    and 3 blocks above it on a 3-second cycle; neighbouring pistons are a third of a cycle apart, so a row moves like an escalator. */
@@ -524,14 +543,14 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
     else if((c+w.off)%w.every===0){const q=crowPos(w,c);hz.drops.push({x:q.x,y:q.y+12,vy:.5,r:6,k:'cinder'});ev('drop',q.x,q.y)}
     const q=crowPos(w,c);if(circHit(q.x,q.y,11,hx,hy,hw,hh))return die(R,'crow')}
   for(let i=hz.drops.length-1;i>=0;i--){const d=hz.drops[i];d.vy=Math.min(9,d.vy+.32);d.y+=d.vy;const tx=Math.floor(d.x/TS),ty=Math.floor((d.y+d.r)/TS);
-    if(d.y>VH+20||(ty>=0&&ty<ROWS&&(solidAt(R,tx,ty)||(tileAt(R,tx,ty)==='^'&&d.y+d.r>ty*TS+14)))){hz.drops.splice(i,1);ev('splash',d.x,Math.min(d.y,VH));continue}
+    if(d.y>VH+20||(ty>=0&&ty<ROWS&&(solidAt(R,tx,ty)||((tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&d.y+d.r>ty*TS+14)))){hz.drops.splice(i,1);ev('splash',d.x,Math.min(d.y,VH));continue}
     if(circHit(d.x,d.y,d.r,hx,hy,hw,hh))return die(R,d.k)}
   for(const h of hz.hooks){
     if(h.st===0){if(pcx>h.x-128&&pcx<h.x+40&&p.y>h.y){h.st=1;h.t=20;ev('creak',h.x,h.y)}}
     else if(h.st===1){if(--h.t<=0)h.st=2}
     else if(h.st===2){h.vy=Math.min(12,h.vy+.55);h.y+=h.vy;if(hit(hx,hy,hw,hh,h.x-14,h.y-15,28,30))return die(R,'anvil');
-      const tx=Math.floor(h.x/TS),ty=Math.floor((h.y+16)/TS),sol=solidAt(R,tx,ty);
-      if(sol||ty>=ROWS-1){const ly=sol?ty-1:ROWS-2;h.st=3;h.t=120;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
+      const tx=Math.floor(h.x/TS),ty=Math.floor((h.y+16)/TS),sol=solidAt(R,tx,ty),lava=(tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&ty<ROWS;
+      if(sol||lava||ty>=ROWS-1){const ly=(sol||lava)?ty-1:ROWS-2;h.st=3;h.t=120;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
         if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil')}}
     else if(h.st===3){if(--h.t<=0){h.st=4;h.t=24;ev('creak',h.x,h.y)}}
     else if(h.st===4){if(--h.t<=0){h.st=5;R.grid[h.idx]='.';ev('lift',h.x,h.y)}}
@@ -551,7 +570,7 @@ const PROOF={"k":3,"f1":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2fc
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-01 v38';
+const BUILD='2026-11-01 v39';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -624,10 +643,41 @@ const THEMES=[
  {name:'quench',top:'#03060b',mid:'#0a1525',bot:'#163049',glow:'90,170,255',stack:'#08111c',girder:'#0e1b2b',ember:['#8fd0ff','#e2f4ff'],dark:'2,4,8',da:.68,acc:'#9fd0ff'},
  {name:'crucible',top:'#0d0805',mid:'#3d1b06',bot:'#943f08',glow:'255,215,140',stack:'#1d0e05',girder:'#2c1607',ember:['#fff2c4','#ffd27a'],dark:'8,4,2',da:.5,acc:'#ff5a3a'},
 ];
+
+/* Backdrop layers, back to front: a far furnace wall (cached), giant turning gears, a conveyor carrying hot ingots,
+   molten pours from tipping crucibles, then each world's own machine (bellows, trip hammers). Background glows are
+   collected in BGL and lit through the darkness by drawDark. */
+const BGC={},BGL=[];
+function farWall(th){if(BGC[th.name])return BGC[th.name];const W=1024,H=VH,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');c.mouths=[];
+  g.fillStyle=th.stack;g.globalAlpha=.5;for(let y=0;y<H;y+=24)for(let x=-((y/24)%2)*24;x<W;x+=48)g.fillRect(x+1,y+1,46,22);g.globalAlpha=1;
+  for(let i=0;i<4;i++){const cx=128+i*256+(hash(i,11)%50-25),w=86+hash(i,12)%50,top=160+hash(i,13)%110;c.mouths.push({cx,w,top});
+    const gr=g.createLinearGradient(0,top,0,H);gr.addColorStop(0,`rgba(${th.glow},.08)`);gr.addColorStop(.35,`rgba(${th.glow},.4)`);gr.addColorStop(1,`rgba(${th.glow},.85)`);
+    g.fillStyle=gr;g.beginPath();g.moveTo(cx-w/2,H);g.lineTo(cx-w/2,top+w/2);g.arc(cx,top+w/2,w/2,Math.PI,0);g.lineTo(cx+w/2,H);g.closePath();g.fill();
+    g.strokeStyle=th.girder;g.lineWidth=9;g.stroke();g.fillStyle=th.stack;for(let k=-2;k<=2;k++)g.fillRect(cx+k*w/5-2,top+w/2,4,H-top)}
+  const hz=g.createLinearGradient(0,0,0,H);hz.addColorStop(0,'rgba(0,0,0,.55)');hz.addColorStop(.7,'rgba(0,0,0,0)');g.fillStyle=hz;g.fillRect(0,0,W,H);
+  BGC[th.name]=c;return c}
+function bigGear(g,x,y,r,a,col,hole){const n=Math.max(8,Math.round(r/7));g.save();g.translate(x,y);g.rotate(a);g.fillStyle=col;
+  for(let k=0;k<n;k++){g.rotate(Math.PI*2/n);g.fillRect(-r*.09,-r-7,r*.18,10)}g.beginPath();g.arc(0,0,r,0,7);g.fill();g.fillStyle=hole;
+  for(let k=0;k<5;k++){const aa=k*Math.PI*2/5;g.beginPath();g.arc(Math.cos(aa)*r*.55,Math.sin(aa)*r*.55,r*.18,0,7);g.fill()}g.beginPath();g.arc(0,0,r*.16,0,7);g.fill();g.restore()}
 /* Backdrop: furnace glow, smokestacks, steam (steam room), girder with chains, trip hammers that slam on the clock-block beat, rising embers */
 function drawBg(g,camX,t,th,clock,hammers){
   const gr=g.createLinearGradient(0,0,0,VH);gr.addColorStop(0,th.top);gr.addColorStop(.55,th.mid);gr.addColorStop(1,th.bot);
   g.fillStyle=gr;g.fillRect(-2,-2,viewW+4,VH+4);
+  BGL.length=0;
+  {const fw=farWall(th),ox=((camX*.06)%1024+1024)%1024;for(let X=-ox;X<viewW;X+=1024){g.drawImage(fw,X,0);for(const m of fw.mouths){const sx=X+m.cx;if(sx>-120&&sx<viewW+120)BGL.push([sx,VH-70,170+20*Math.sin(t*3+m.cx),.42])}}}
+  {const o=camX*.18;for(let k=Math.floor(o/430)-1;k<=Math.floor((o+viewW)/430)+1;k++){const hs=hash(k,21),r=46+hs%58,x=k*430-o+hs%140,y=VH-110-(hs>>5)%170;bigGear(g,x,y,r,t*.22*(hs%2?1:-1)*(60/r),th.stack,th.mid)}}
+  {const o=camX*.32,by=VH-150;g.fillStyle=th.girder;g.fillRect(-2,by,viewW+4,7);for(let x=-(o%44);x<viewW+44;x+=44){g.beginPath();g.arc(x,by+3.5,5,0,7);g.fill()}
+    for(let x=-(o%210);x<viewW+210;x+=210)g.fillRect(x,by+7,6,VH-by);
+    for(let k=0;k<14;k++){const W=viewW+300,x=((k*190+t*34-o)%W+W)%W-150;const ig=g.createLinearGradient(0,by-11,0,by);ig.addColorStop(0,th.ember[1]);ig.addColorStop(1,th.ember[0]);g.fillStyle=ig;g.fillRect(x,by-10,26,10);BGL.push([x+13,by-6,42,.5])}}
+  {const o=camX*.45;for(let k=Math.floor(o/700)-1;k<=Math.floor((o+viewW)/700)+1;k++){const hs=hash(k,31);if(hs%3===2&&th.name!=='crucible')continue;const x=k*700-o+200+hs%160,tip=.5+.08*Math.sin(t*.7+k);
+    g.save();g.translate(x,46);g.rotate(tip);g.fillStyle=th.girder;g.beginPath();g.moveTo(-26,-18);g.lineTo(26,-18);g.lineTo(18,18);g.lineTo(-18,18);g.closePath();g.fill();g.restore();
+    const sw=7+Math.sin(t*9+k)*1.5,sg=g.createLinearGradient(x+20,0,x+20+sw,0);sg.addColorStop(0,th.ember[0]);sg.addColorStop(.5,th.ember[1]);sg.addColorStop(1,th.ember[0]);g.fillStyle=sg;
+    g.beginPath();g.moveTo(x+18,58);for(let y=58;y<=VH;y+=24)g.lineTo(x+20+Math.sin(t*6+y*.05)*1.6,y);g.lineTo(x+20+sw,VH);for(let y=VH;y>=58;y-=24)g.lineTo(x+20+sw+Math.sin(t*6+y*.05+1)*1.6,y);g.closePath();g.fill();
+    g.fillStyle=`rgba(${th.glow},.35)`;g.beginPath();g.ellipse(x+22,VH-6,30,10,0,0,7);g.fill();BGL.push([x+22,VH*.55,130,.55]);BGL.push([x+22,VH-10,90,.6])}}
+  if(th.name==='steam'){const o=camX*.28;for(let k=Math.floor(o/560)-1;k<=Math.floor((o+viewW)/560)+1;k++){const x=k*560-o+300,y=VH-210,open=.16+.12*Math.sin(t*1.3+k);
+    g.fillStyle=th.girder;g.save();g.translate(x,y);g.fillRect(-6,-4,140,8);g.rotate(-open);g.fillRect(-6,-4,140,8);g.restore();
+    g.strokeStyle=th.girder;g.lineWidth=3;for(let i=1;i<6;i++){const lx=x+i*22,h=Math.tan(open)*i*22;g.beginPath();g.moveTo(lx,y);g.lineTo(lx-8,y-h*.5);g.lineTo(lx,y-h);g.stroke()}
+    g.fillRect(x+130,y-6,40,12)}}
   const fxp=viewW*.62-camX*.03;const fg=g.createRadialGradient(fxp,VH+60,20,fxp,VH+60,420);fg.addColorStop(0,`rgba(${th.glow},.42)`);fg.addColorStop(1,`rgba(${th.glow},0)`);g.fillStyle=fg;g.fillRect(0,0,viewW,VH);
   const sp=150,off=camX*.15;
   for(let k=Math.floor(off/sp)-1;k<=Math.floor((off+viewW)/sp)+1;k++){const hs=hash(k,7),x=k*sp-off+(hs%40),w=34+(hs>>4)%40,hgt=170+(hs>>9)%150;
@@ -640,13 +690,13 @@ function drawBg(g,camX,t,th,clock,hammers){
   for(let k=Math.floor(off2/230)-1;k<=Math.floor((off2+viewW)/230)+1;k++){const hs=hash(k,3),x=k*230-off2+(hs%60),len=60+(hs>>6)%120,sw=Math.sin(t*.8+k)*4;
     g.strokeStyle=th.girder;g.lineWidth=2.5;g.beginPath();for(let y=44;y<44+len;y+=7){g.moveTo(x+sw*(y-44)/len,y);g.lineTo(x+sw*(y-38)/len,y+5)}g.stroke();
     g.beginPath();g.arc(x+sw,44+len+6,6,0,Math.PI);g.stroke()}
-  if(hammers){const ph=(clock%60)/60,lift=ph<.84?ph/.84:1-(ph-.84)/.16,off3=camX*.3;g.fillStyle=th.girder;
+  if(hammers||th.name==='hammer'){const ph=(clock%60)/60,lift=ph<.84?ph/.84:1-(ph-.84)/.16,off3=camX*.3;g.fillStyle=th.girder;
     for(let k=Math.floor(off3/520)-1;k<=Math.floor((off3+viewW)/520)+1;k++){const x=k*520-off3+140,py=VH-200;
       g.fillRect(x-12,py-10,24,210);g.fillRect(x-40,VH-24,80,24);
       g.save();g.translate(x,py);g.rotate(-.55*lift);g.fillRect(0,-7,170,14);g.fillRect(146,-10,48,92);g.restore();
       g.fillRect(x+128,VH-58,92,58);
       if(lift<.08){g.fillStyle=`rgba(${th.glow},${.5*(1-lift/.08)})`;g.beginPath();g.arc(x+174,VH-60,26,0,7);g.fill();g.fillStyle=th.girder}}}
-  for(let k=0;k<46;k++){const sp2=18+(k%5)*9,y=VH-fract(t*sp2/VH*0.5+k*0.137)*(VH+30),x=fract(k*0.6180339+t*0.004*(k%3+1))*(viewW+40)-20;
+  for(let k=0;k<70;k++){const sp2=18+(k%5)*9,y=VH-fract(t*sp2/VH*0.5+k*0.137)*(VH+30),x=fract(k*0.6180339+t*0.004*(k%3+1))*(viewW+40)-20;
     const px=((x-camX*.5)%(viewW+40)+viewW+40)%(viewW+40)-20+Math.sin(t*2+k)*6;
     g.globalAlpha=.25+.55*fract(Math.sin(k*91.7+t*3)*43758);g.fillStyle=th.ember[k%4?0:1];g.fillRect(px,y,k%6?2:3,k%6?2:3)}
   g.globalAlpha=1;
@@ -663,7 +713,10 @@ function drawTile(g,c,x,y,tx,ty,env){
     g.fillStyle='#1d1512';g.fillRect(x+((row+tx*0)%32),y+15,1,0);g.fillRect(x,y+15,TS,2);g.fillRect(x+(ty%2?8:24),y,2,15);g.fillRect(x+(ty%2?24:8),y+17,2,15);
     const up=envTile(env,tx,ty-1);if(up!=='#'){g.fillStyle='#4a3a32';g.fillRect(x,y,TS,4);const hot=.55+.25*Math.sin(t*2+tx*.7);g.fillStyle=`rgba(255,110,30,${hot})`;g.fillRect(x,y,TS,2);
       g.fillStyle='rgba(255,140,60,.12)';g.fillRect(x,y-6,TS,6)}
-    g.fillStyle='#5a4a42';if((hash(tx,ty)%3)===0){g.fillRect(x+5,y+8,2,2);g.fillRect(x+25,y+24,2,2)}break}
+    g.fillStyle='#5a4a42';if((hash(tx,ty)%3)===0){g.fillRect(x+5,y+8,2,2);g.fillRect(x+25,y+24,2,2)}
+    if(up!=='#'&&hash(Math.floor(tx/5),ty)%3===0){const pg=g.createLinearGradient(0,y,0,y+12);pg.addColorStop(0,'#5d636d');pg.addColorStop(1,'#2b2f36');g.fillStyle=pg;g.fillRect(x,y+2,TS,10);g.fillStyle='#8d95a1';g.fillRect(x,y+2,TS,1.5);g.fillStyle='#1b1f26';g.fillRect(x+TS-1,y+2,1,10);g.fillStyle='#a9b0bb';g.fillRect(x+5,y+6,2,2);g.fillRect(x+24,y+6,2,2);g.fillStyle='rgba(255,110,30,.7)';g.fillRect(x,y+2,TS,1)}
+    else if(up!=='#'&&hash(tx,ty+7)%9===0){g.strokeStyle='rgba(255,120,40,.55)';g.lineWidth=1.2;g.beginPath();g.moveTo(x+6,y+4);g.lineTo(x+11,y+11);g.lineTo(x+9,y+17);g.stroke()}
+    if(up==='#'){const d=envTile(env,tx,ty-2)==='#'?.38:.2;g.fillStyle=`rgba(0,0,0,${d})`;g.fillRect(x,y,TS,TS)}break}
   case'B':{g.fillStyle='#262a31';g.fillRect(x,y,TS,TS);const sg=g.createLinearGradient(x,y,x,y+TS);sg.addColorStop(0,'#6b727d');sg.addColorStop(1,'#3e434c');g.fillStyle=sg;g.fillRect(x+2,y+2,TS-4,TS-4);
     g.fillStyle='#8d95a1';g.fillRect(x+2,y+2,TS-4,2);g.fillStyle='#2b2f36';for(const[a,b]of[[6,6],[24,6],[6,24],[24,24]]){g.beginPath();g.arc(x+a+1,y+b+1,2,0,7);g.fill()}
     g.fillStyle='#a9b0bb';for(const[a,b]of[[6,6],[24,6],[6,24],[24,24]])g.fillRect(x+a,y+b,1.5,1.5);
@@ -689,9 +742,9 @@ function drawTile(g,c,x,y,tx,ty,env){
     g.fillStyle='#8d95a1';g.fillRect(x+12,y+4-pop,8,10+pop);g.fillStyle='#c9cfd8';g.fillRect(x+1,y+1-pop,TS-2,6);
     g.fillStyle='#ff6a1a';for(let i=0;i<4;i++)g.fillRect(x+3+i*8,y+2-pop,4,4);
     if(a>0){g.fillStyle=`rgba(255,240,225,${a/14*.6})`;for(let k=0;k<4;k++){g.beginPath();g.arc(x+6+k*7,y-6-pop-(14-a)*1.5,4+(14-a)*.4,0,7);g.fill()}}break}
-  case'^':{if(ty===ROWS-1){const lg=g.createLinearGradient(x,y+6,x,y+TS);lg.addColorStop(0,'#ffd27a');lg.addColorStop(.25,'#ff6a1a');lg.addColorStop(1,'#8a2405');g.fillStyle=lg;
+  case'~':case'^':{if(c==='~'||ty===ROWS-1){const lg=g.createLinearGradient(x,y+6,x,y+TS);lg.addColorStop(0,'#ffd27a');lg.addColorStop(.25,'#ff6a1a');lg.addColorStop(1,'#8a2405');g.fillStyle=lg;
       const w1=Math.sin(t*2.2+tx*.9)*2.5,w2=Math.sin(t*2.2+(tx+1)*.9)*2.5;g.beginPath();g.moveTo(x,y+14+w1*.6);g.quadraticCurveTo(x+16,y+11+(w1+w2)*.3,x+TS,y+14+w2*.6);g.lineTo(x+TS,y+TS);g.lineTo(x,y+TS);g.closePath();g.fill();
-      g.fillStyle='rgba(255,140,50,.18)';g.fillRect(x,y-14,TS,24);if(hash(tx,Math.floor(t*1.5))%7===0){g.fillStyle='#ffd27a';g.beginPath();g.arc(x+12,y+13,2.5,0,7);g.fill()}break}
+      g.fillStyle='rgba(255,140,50,.18)';g.fillRect(x,y-14,TS,24);g.strokeStyle='rgba(255,190,110,.10)';g.lineWidth=1.5;for(let k=0;k<2;k++){const yy=y-4-k*13-fract(t*.6+tx*.37+k*.5)*10;g.beginPath();g.moveTo(x,yy);g.quadraticCurveTo(x+8,yy-3+Math.sin(t*3+tx+k)*3,x+16,yy);g.quadraticCurveTo(x+24,yy+3,x+TS,yy);g.stroke()}if(hash(tx,Math.floor(t*1.5))%7===0){g.fillStyle='#ffd27a';g.beginPath();g.arc(x+12,y+13,2.5,0,7);g.fill()}break}
     for(let i=0;i<2;i++){const bx=x+4+i*12;g.fillStyle='#4a423e';g.beginPath();g.moveTo(bx,y+TS);g.lineTo(bx+6,y+14);g.lineTo(bx+12,y+TS);g.closePath();g.fill();
       g.fillStyle='#ff6a1a';g.beginPath();g.moveTo(bx+4,y+20);g.lineTo(bx+6,y+14);g.lineTo(bx+8,y+20);g.closePath();g.fill()}
     g.fillStyle='#2a221f';g.fillRect(x,y+TS-3,TS,3);break}
@@ -864,7 +917,7 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
   const x0=Math.max(0,Math.floor(camX/TS)-4),x1=Math.min(env.w-1,Math.ceil((camX+viewW)/TS)+4);
   for(let ty=0;ty<ROWS;ty++)for(let tx=x0;tx<=x1;tx++){const c=env.grid[ty*env.w+tx],X=tx*TS+16,Y=ty*TS+16;
     if(c==='.'||c==='#'||c==='B')continue;
-    if(c==='^'){if(ty===ROWS-1)L(X,Y-6,80,.75);else L(X,Y+2,40,.6)}
+    if(c==='^'||c==='~'){if(c==='~'||ty===ROWS-1)L(X,Y-6,80,.75);else L(X,Y+2,40,.6)}
     else if(c==='v')L(X,Y-2,42,.55);
     else if(c==='!'){const on=R.check&&R.check.x===tx&&R.check.y===ty;L(X,Y-8,on?200:100,on?1:.75)}
     else if(c==='G')L(X,Y-26,250,1);
@@ -874,6 +927,7 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
     else if(c==='C'||c==='@'||c==='I'||c==='-'||c==='n')L(X,Y,34,.35);
   }
   for(const m of R.movers){const q=moverPos(m,env.clock);L(q.x,q.y,54,.65)}
+  if(playing)for(const b of BGL)L0(camX+b[0]/zoom,b[1]/zoom-sy,b[2]/zoom,b[3]*.75);
   if(R.hz){hzLights(R,env.clock,L);for(const pi of R.hz.pistons)L(pi.x+pi.w/2,pistonTop(pi,env.clock),46,.55)}
   if(INTRO_FX&&INTRO_FX.front>-1e8){const f=INTRO_FX.front,a=.55*INTRO_FX.dark;for(const y of[60,200,340,460])L0(f,y,170,a)}
   if(playing&&!R.p.dead){const hf=Math.max(0,R.heat/R.heatMax),fl=1+.05*Math.sin(t*23),dy=INTRO_FX?INTRO_FX.drop:0;L0(R.p.x+11,R.p.y+14-dy,(120+140*hf)*fl,1);L0(R.p.x+11,R.p.y+14-dy,70,1)}
@@ -1435,6 +1489,8 @@ if(!store.get('tf3-f2v2',false)){delete best.f2;delete medals.f2;store.set('tf3-
 if(!store.get('tf3-hz1',false)){for(const k of Object.keys(best))delete best[k];for(const k of Object.keys(medals))delete medals[k];store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-hz1',true)}
 // flame balls and piston pillars changed these layouts: their old best times and medals no longer apply
 if(!store.get('tf3-hz2',false)){for(const k of['w1cd','w1f','f1','w2c','w2e','w2f','f2','f3','f4','f5']){delete best[k];delete medals[k]}store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-hz2',true)}
+// every level was rebuilt on raised terrain, so old best times and medals no longer apply (cleared levels stay unlocked)
+if(!store.get('tf3-terrain1',false)){for(const k of Object.keys(best))delete best[k];for(const k of Object.keys(medals))delete medals[k];store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-terrain1',true)}
 const goldFrames=L=>Math.ceil((L.fm||0)*1.10/6)*6;
 function medalPips(id){const m=medals[id]||{},n=['i','s','g'].filter(k=>m[k]).length;return h('span',{class:'pips',role:'img','aria-label':`${n} of 3 medals`},...['i','s','g'].map(k=>h('span',{class:`medal ${k}${m[k]?' on':''}`})))}
 function medalRow(L,R){const M=V.medalResult||{has:{},fresh:[]};
@@ -1562,7 +1618,7 @@ function render(t){
   ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round((-camY+sy)*k)/k;ctx.translate(ox,oy);
   const x0=Math.floor(camX/TS)-2,x1=Math.ceil((camX+viewW)/TS)+2;const late=[];
   for(let ty=0;ty<ROWS;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=env.w){drawWall(ctx,tx*TS,ty*TS,tx,ty,env.w);continue}
-    const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(c==='G'||c==='^'&&ty===ROWS-1){late.push([c,tx,ty]);continue}drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env)}
+    const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(c==='G'||c==='~'||c==='^'&&ty===ROWS-1){late.push([c,tx,ty]);continue}drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env)}
   drawMovers(ctx,R.movers,clock,t);
   for(const[c,tx,ty]of late)drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env);
   drawHazards(ctx,R,clock,t);
@@ -1570,6 +1626,9 @@ function render(t){
   if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,INTRO_FX&&INTRO_FX.drop>0?Object.assign({},R.p,{y:R.p.y-INTRO_FX.drop,vy:10,sq:-.2}):R.p,t,R.heat/R.heatMax);
   ctx.restore();
   drawDark(R,env,camX,sx,sy-camY,th,playing,t);
+  if(playing){ctx.save();ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);const o=camX*1.35*zoom,W=baseW;ctx.fillStyle='rgba(4,2,1,.9)';
+    for(let k=Math.floor(o/380)-1;k<=Math.floor((o+W)/380)+1;k++){const hs=hash(k,41),x=k*380-o+hs%120,len=26+hs%70;if(hs%4===0){ctx.fillRect(x-60,0,160,12);continue}
+      for(let y=0;y<len;y+=9){ctx.fillRect(x-2,y,4,7)}ctx.beginPath();ctx.arc(x,len+5,6,0,Math.PI);ctx.lineWidth=3;ctx.strokeStyle='rgba(4,2,1,.9)';ctx.stroke()}ctx.restore()}
   if(playing){ctx.save();ctx.translate(ox,oy);
     if(INTRO_FX&&INTRO_FX.front>-1e8&&INTRO_FX.u<1){const f=INTRO_FX.front,a=.55*(1-INTRO_FX.u*.6),gr=ctx.createLinearGradient(f-90,0,f+14,0);gr.addColorStop(0,'rgba(255,106,26,0)');gr.addColorStop(.8,`rgba(255,150,60,${a})`);gr.addColorStop(1,`rgba(255,226,160,${a*1.2})`);ctx.fillStyle=gr;ctx.fillRect(f-90,0,104,VH)}
     for(const q of V.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.c;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s)}ctx.globalAlpha=1;ctx.restore();
