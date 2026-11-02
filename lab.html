@@ -355,7 +355,7 @@ function step(R,inp){
     for(let ty=c0;ty<=c1;ty++)for(let tx=a;tx<=b;tx++){const c=tileAt(R,tx,ty);if((c==='T'||c==='U')&&timedOn(c,R.clock))return die(R,'crush')}}
   const dir=inp.dir;
   if(inp.pressed)p.buf=7;else if(p.buf>0)p.buf--;
-  if(dir)p.face=dir;
+  if(dir)p.face=dir>0?1:-1;
   const ice=p.onGround&&p.gt==='I';
   const acc=p.onGround?(ice?.13:.75):.45,fric=p.onGround?(ice?.035:.6):.12,MAX=4.2;
   if(p.lock>0)p.lock--;else p.vx=approach(p.vx,dir*MAX,dir?acc:fric);
@@ -951,13 +951,14 @@ addEventListener('keyup',e=>{const k=e.key;
   if(k==='ArrowLeft'||k==='a'||k==='A')input.kl=false;if(k==='ArrowRight'||k==='d'||k==='D')input.kr=false;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
 addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false});
-const pad=$('#pad'),padPtrs=new Map();const DEAD=12,LEASH=36;
+const pad=$('#pad'),padPtrs=new Map();const DEAD=8,LEASH=30,RAMP=20;
 // Re-grip grace: lifting the move thumb for a moment (to shift it mid-jump) keeps Ember moving the same way for
 // GRACE frames, and a thumb that comes back down inside that window carries on in that direction straight away.
 const GRACE=12;let gDir=0,gLeft=0;
 function padDir(q){const dx=q.x-q.ax;return dx>DEAD?1:dx<-DEAD?-1:0}
 function startGrace(dir){if(dir){gDir=dir;gLeft=GRACE}}
-function padUpdate(){let d=0,last=null;for(const q of padPtrs.values())last=q;if(last){const dx=last.x-last.ax;d=dx>DEAD?1:dx<-DEAD?-1:0}input.tl=d<0;input.tr=d>0}
+// Analog: just past the dead zone Ember walks slowly (35% speed), and reaches full speed when the thumb is DEAD+RAMP px out.
+function padUpdate(){let d=0,v=0,last=null;for(const q of padPtrs.values())last=q;if(last){const dx=last.x-last.ax,ad=Math.abs(dx);if(ad>DEAD){d=Math.sign(dx);v=d*(.35+.65*Math.min(1,(ad-DEAD)/RAMP))}}input.tl=d<0;input.tr=d>0;input.tv=v}
 pad.addEventListener('pointerdown',e=>{e.preventDefault();try{pad.setPointerCapture(e.pointerId)}catch(_){}padPtrs.delete(e.pointerId);
   const carry=gLeft>0&&padPtrs.size===0?gDir:0;padPtrs.set(e.pointerId,{ax:e.clientX-carry*(DEAD+1),x:e.clientX});gLeft=0;padUpdate()});
 pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=e.clientX;const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;padUpdate()});
@@ -1406,7 +1407,7 @@ function tick(){if(!V||V.paused)return;const R=V.R;
   if(R.won)return;
   let inp;
   if(V.replay){const a=V.replay[Math.floor(V.rf/K)];V.rf++;const[d,hd]=a==null?[0,0]:ACTS[a];inp={dir:d,held:!!hd,pressed:!!hd&&!V.prevHeld};V.prevHeld=!!hd}
-  else{let dir=((input.kr||input.tr)?1:0)-((input.kl||input.tl)?1:0);if(gLeft>0){if(!dir&&padPtrs.size===0){if(V.R.p.onGround)gLeft=0;else dir=gDir}if(gLeft>0)gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
+  else{let dir=(input.kr?1:0)-(input.kl?1:0);if(!dir&&(input.tl||input.tr))dir=input.tv||(input.tr?1:-1);if(gLeft>0){if(!dir&&padPtrs.size===0){if(V.R.p.onGround)gLeft=0;else dir=gDir}if(gLeft>0)gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
   const g0=R.gems,c0=R.check,res=step(R,inp);
   if(!V.replay){const lv=LEVELS[V.idx].code;
     if(res==='dead'){V.att=(V.att||1)+1;LOG.add('death',{lv,why:R.lastDeath,tx:Math.floor((R.p.x+R.p.w/2)/TS),ty:Math.floor((R.p.y+R.p.h/2)/TS),vy:+R.p.vy.toFixed(1),heat:Math.round(100*Math.max(0,R.heat)/R.heatMax),clk:R.clock})}
