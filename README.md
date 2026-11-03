@@ -1,6 +1,6 @@
 # Tumble Forge
 
-A brutal platformer for iPhone across five worlds (played in landscape). Every level climbs and drops across raised floors, with each obstacle set on its own height. You are **Ember**, a spark loose in a foundry, and you are cooling down. Light braziers and grab coal to keep your heat up, then reach the furnace at the end.
+A brutal platformer for iPhone across five worlds (played in landscape). Every level climbs and drops across raised floors, with each obstacle set on its own height; some World 2 levels stack tiers into a zig-zag that you drop down. You are **Ember**, a spark loose in a foundry, and you are cooling down. Light braziers and grab coal to keep your heat up, then reach the furnace at the end.
 
 **Play:** https://drfillmore.github.io/Tumble-Forge/
 
@@ -24,7 +24,7 @@ If you hear no music, check the ring/silent switch: iOS mutes web audio while th
 | World | Levels | Tuned for |
 |-------|--------|-----------|
 | 1 · Slag Run | 1-1 Cinder Path, 1-2 Slag Bridges, 1-3 Flare Gaps, 1-4 The Chimney, 1-5 Tap Hops, 1-6 Cog Run, 1-7 Spring Furnace, 1-8 Crumble Climb, 1-9 Trap Row, 1-10 Slag Run (finale) | Top 5% of players |
-| 2 · Bellows | 2-1 Steam Vents, 2-2 Vent Ceiling, 2-3 Rail Cogs, 2-4 Saw Chimney, 2-5 First Beat, 2-6 High Ledges, 2-7 Anvil Row, 2-8 Piston Works, 2-9 Side Furnace, 2-10 Bellows (finale) | Top 4% of players |
+| 2 · Bellows (2-3, 2-6 and 2-8 are switchbacks: tiers that run right, then left, then right; 2-5 and 2-10 start high up) | 2-1 Steam Vents, 2-2 Vent Ceiling, 2-3 Rail Cogs, 2-4 Saw Chimney, 2-5 First Beat, 2-6 High Ledges, 2-7 Anvil Row, 2-8 Piston Works, 2-9 Side Furnace, 2-10 Bellows (finale) | Top 4% of players |
 | 3 · Trip Hammer | 3-1 Trip Hammer | Top 3% |
 | 4 · Quench | 4-1 Quench | Top 2% |
 | 5 · Crucible | 5-1 Crucible | Top 1% |
@@ -35,6 +35,7 @@ New hazards by world (every one warns before it can hurt you, and behaves the sa
 |-------|---------|
 | 1 | Beat jets (flame columns in the gaps on the hammer beat), trap jets (fire when you come close) |
 | 2 | Side jets, the ladle (pours slag on a rhythm), hanging anvils (drop, rest, get hauled back up) |
+| 2 | Forge bats (fly at jump height, drop a slag bomb that splits into fire running both ways), sliding platforms (planks on rails, half a cycle apart), landing spikes (pop a third of a second after you land), bone fish (leap straight up from the gaps between one-block pillars, in ones, twos and threes), ricochet balls (bounce round a walled chamber) |
 | 3 | Fire-biters (chomping heads that leap from the lava), the slag balloon (drops cinders from its basket) |
 | 1 onward | Flame balls that shoot up out of gaps and fall back (single, or two taking turns) |
 | 2 onward | Piston pillars that rise and sink out of the lava in a wave; ride them across |
