@@ -534,7 +534,7 @@ function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drop
     else if(ch==='D'){hz.ladles.push({x0:X+16,y:Y+12,span:6*TS,per:240,every:48,off:0});R.grid[i]='.'}
     else if(ch==='N'){hz.hooks.push({x:X+16,y:Y+16,home:Y+16,st:0,t:0,vy:0,idx:-1});R.grid[i]='.'}
     else if(ch==='A'){hz.crows.push({hunt:false,x0:X+16,y0:Y+16,span:8*TS,per:300,every:64,off:(tx*13)%64});R.grid[i]='.'}
-    else if(ch==='H'){hz.crows.push({hunt:true,x:X+16,y:Y+16,hx:X+16,hy:Y+16,vx:0,cd:40,warn:0,lo:X-10*TS,hi:X+40*TS});R.grid[i]='.'}
+    else if(ch==='H'){hz.crows.push({hunt:true,x:X+16,y:Y+16,hx:X+16,hy:Y+16,vx:0,cd:40,warn:0,lo:X-10*TS,hi:X+40*TS,top:Math.floor(ty/ROWS)*ROWS*TS});R.grid[i]='.'}
     else if(ch==='F'||ch==='L'){hz.cinders.push({x:X+16,base:Y+12,ph:((tx*37)+(ch==='L'?75:0))%150,per:150,ball:true});R.grid[i]=ty===R.rows-1?'^':'~'}
     else if(ch==='P'){const last=hz.pistons[hz.pistons.length-1];if(last&&last.row===ty&&last.x+last.w===X)last.w+=TS;else hz.pistons.push({x:X,w:TS,row:ty,lo:(ty+1)*TS,hi:(ty-3)*TS,per:180,ph:(hz.pistons.length*60)%180});R.grid[i]='.'}
     else if(ch==='E'){hz.cinders.push({x:X+16,base:Y+12,ph:(tx*37)%150,per:150});R.grid[i]=ty===R.rows-1?'^':'~'}
@@ -587,14 +587,14 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
     const hot=jetHeat(j,c)[1];if(hot>=.5){const b=jetBox(j,hot);if(hit(hx,hy,hw,hh,b[0],b[1],b[2],b[3]))return die(R,j.trap?'trap':'jet')}}
   for(const d of hz.ladles){const q=ladlePos(d,c);if(q.ph===0){hz.drops.push({x:q.x+12,y:q.y+8,vy:.5,r:6,k:'slag'});ev('pour',q.x,q.y)}}
   for(const w of hz.crows){
-    if(w.hunt){const on=pcx>w.lo&&pcx<w.hi,tx=on?pcx:w.hx,ty=on?clampN(p.y-150,48,300):w.hy;
+    if(w.hunt){const on=pcx>w.lo&&pcx<w.hi,tx=on?pcx:w.hx,ty=on?clampN(p.y-150,w.top+48,w.top+300):w.hy;
       w.vx=approach(w.vx,clampN((tx-w.x)*.05,-2.6,2.6),.12);w.x+=w.vx;w.y+=(ty-w.y)*.04;if(w.cd>0)w.cd--;
       if(w.warn>0){if(--w.warn===0){hz.drops.push({x:w.x,y:w.y+12,vy:1.5,r:6,k:'cinder'});w.cd=60;ev('drop',w.x,w.y)}}
       else if(on&&w.cd<=0&&Math.abs(tx-w.x)<18){w.warn=16;ev('caw',w.x,w.y)}}
     else if((c+w.off)%w.every===0){const q=crowPos(w,c);hz.drops.push({x:q.x,y:q.y+12,vy:.5,r:6,k:'cinder'});ev('drop',q.x,q.y)}
     const q=crowPos(w,c);if(circHit(q.x,q.y,11,hx,hy,hw,hh))return die(R,'crow')}
   for(let i=hz.drops.length-1;i>=0;i--){const d=hz.drops[i];d.vy=Math.min(9,d.vy+.32);d.y+=d.vy;const tx=Math.floor(d.x/TS),ty=Math.floor((d.y+d.r)/TS);
-    if(d.y>R.h+20||(ty>=0&&ty<R.rows&&(solidAt(R,tx,ty)||((tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&d.y+d.r>ty*TS+14)))){hz.drops.splice(i,1);ev('splash',d.x,Math.min(d.y,VH));if(d.k==='bomb'&&ty>=0&&ty<ROWS&&solidAt(R,tx,ty)){for(const dir of[-1,1])hz.runners.push({x:d.x,y:ty*TS,dir,t:0});ev('flare',d.x,ty*TS)}continue}
+    if(d.y>R.h+20||(ty>=0&&ty<R.rows&&(solidAt(R,tx,ty)||((tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&d.y+d.r>ty*TS+14)))){hz.drops.splice(i,1);ev('splash',d.x,Math.min(d.y,R.h));if(d.k==='bomb'&&ty>=0&&ty<R.rows&&solidAt(R,tx,ty)){for(const dir of[-1,1])hz.runners.push({x:d.x,y:ty*TS,dir,t:0});ev('flare',d.x,ty*TS)}continue}
     if(circHit(d.x,d.y,d.r,hx,hy,hw,hh))return die(R,d.k)}
   for(const h of hz.hooks){
     if(h.st===0){if(pcx>h.x-128&&pcx<h.x+40&&p.y>h.y){h.st=1;h.t=20;ev('creak',h.x,h.y)}}
@@ -645,9 +645,9 @@ const LOG=(()=>{
   const scr=window.screen||{};
   const meta={sid,build:BUILD,started:new Date().toISOString(),ua:navigator.userAgent,screen:`${scr.width}x${scr.height}`,
     standalone:!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches),touch:('ontouchstart' in window)};
-  const cur={meta,entries:[]};let past=store.get('tflab-log',[]);if(!Array.isArray(past))past=[];past=past.slice(-3);for(const x of past)if(x&&Array.isArray(x.entries)&&x.entries.length>400)x.entries=x.entries.slice(-400);
+  const cur={meta,entries:[]};let past=store.get('tflab-log',[]);if(!Array.isArray(past))past=[];past=past.slice(-3);for(const x of past)if(x&&Array.isArray(x.entries)&&x.entries.length>400)x.entries=x.entries.slice(-400);const pastStr=JSON.stringify(past).slice(1,-1);
   let db=null,part=0,dirty=false,busy=false,timer=null,state='device';
-  let lt=null;function saveLocal(){if(lt){clearTimeout(lt);lt=null}store.set('tflab-log',past.concat([cur]))}
+  let lt=null;function saveLocal(){if(lt){clearTimeout(lt);lt=null}try{localStorage.setItem('tflab-log','['+pastStr+(pastStr?',':'')+JSON.stringify(cur)+']')}catch(e){}}
   function saveSoon(ms){if(lt)return;lt=setTimeout(()=>{lt=null;saveLocal()},ms)}
   function schedule(ms){if(!db)return;if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;flush()},ms)}
   function flush(){if(!db||busy||!dirty)return;busy=true;dirty=false;const p=part,slice=cur.entries.slice(p*PART,(p+1)*PART),full=slice.length>=PART&&cur.entries.length>(p+1)*PART;
@@ -655,7 +655,7 @@ const LOG=(()=>{
       .then(()=>{busy=false;state='synced';if(full){part++;dirty=true}if(dirty)schedule(400)})
       .catch(e=>{busy=false;dirty=true;state='device';if(e&&(e.code==='unavailable'||e.code==='resource_exhausted'))schedule(8000);else db=null})}
   function add(e,data,urgent){const r=Object.assign({t:Math.round(performance.now()-t0)/1000,e},data||{});cur.entries.push(r);
-    if(cur.entries.length>1200)cur.entries.splice(0,cur.entries.length-1200);saveSoon(urgent?300:3000);dirty=true;schedule(urgent?300:6000)}
+    if(cur.entries.length>1200)cur.entries.splice(0,cur.entries.length-1200);saveSoon(urgent?300:20000);dirty=true;schedule(urgent?300:6000)}
   try{if(window.claude&&claude.use)claude.use('db').then(d=>{if(d){db=d;dirty=true;schedule(500)}}).catch(()=>{})}catch(e){}
   addEventListener('error',ev=>add('error',{msg:String(ev.message||ev.error||'error').slice(0,300),line:ev.lineno,col:ev.colno,stack:ev.error&&ev.error.stack?String(ev.error.stack).slice(0,600):undefined},true));
   addEventListener('unhandledrejection',ev=>add('error',{msg:'promise: '+String(ev.reason&&ev.reason.message||ev.reason).slice(0,300)},true));
@@ -679,7 +679,7 @@ let zoomSet=store.get('tf-zoom',null);
 // even with rotation lock on (iPhone does not let a web page lock the orientation itself).
 const SIDE={on:false};
 function appW(){return SIDE.on?window.innerHeight:window.innerWidth}function appH(){return SIDE.on?window.innerWidth:window.innerHeight}
-function px(e){return SIDE.on?e.clientY:px(e)}
+function px(e){return SIDE.on?e.clientY:e.clientX}
 function sideCheck(){const touch=matchMedia('(pointer: coarse)').matches||('ontouchstart' in window),want=touch&&window.innerHeight>window.innerWidth;
   const de=document.documentElement,app=document.getElementById('app');if(want!==SIDE.on){SIDE.on=want;de.classList.toggle('rot',want)}
   if(app){if(want){app.style.width=window.innerHeight+'px';app.style.height=window.innerWidth+'px'}else{app.style.width='';app.style.height=''}}
@@ -781,7 +781,7 @@ function drawTile(g,c,x,y,tx,ty,env){
     const up=envTile(env,tx,ty-1);if(up!=='#'){g.fillStyle='#4a3a32';g.fillRect(x,y,TS,4);const hot=.55+.25*Math.sin(t*2+tx*.7);g.fillStyle=`rgba(255,110,30,${hot})`;g.fillRect(x,y,TS,2);
       g.fillStyle='rgba(255,140,60,.12)';g.fillRect(x,y-6,TS,6)}
     g.fillStyle='#5a4a42';if((hash(tx,ty)%3)===0){g.fillRect(x+5,y+8,2,2);g.fillRect(x+25,y+24,2,2)}
-    if(up!=='#'&&hash(Math.floor(tx/5),ty)%3===0){const pg=g.createLinearGradient(0,y,0,y+12);pg.addColorStop(0,'#5d636d');pg.addColorStop(1,'#2b2f36');g.fillStyle=pg;g.fillRect(x,y+2,TS,10);g.fillStyle='#8d95a1';g.fillRect(x,y+2,TS,1.5);g.fillStyle='#1b1f26';g.fillRect(x+TS-1,y+2,1,10);g.fillStyle='#a9b0bb';g.fillRect(x+5,y+6,2,2);g.fillRect(x+24,y+6,2,2);g.fillStyle='rgba(255,110,30,.7)';g.fillRect(x,y+2,TS,1)}
+    if(up!=='#'&&hash(Math.floor(tx/5),ty)%3===0){g.fillStyle=vgrad(g,'cap',y,y+12,[[0,'#5d636d'],[1,'#2b2f36']]);g.fillRect(x,y+2,TS,10);g.fillStyle='#8d95a1';g.fillRect(x,y+2,TS,1.5);g.fillStyle='#1b1f26';g.fillRect(x+TS-1,y+2,1,10);g.fillStyle='#a9b0bb';g.fillRect(x+5,y+6,2,2);g.fillRect(x+24,y+6,2,2);g.fillStyle='rgba(255,110,30,.7)';g.fillRect(x,y+2,TS,1)}
     else if(up!=='#'&&hash(tx,ty+7)%9===0){g.strokeStyle='rgba(255,120,40,.55)';g.lineWidth=1.2;g.beginPath();g.moveTo(x+6,y+4);g.lineTo(x+11,y+11);g.lineTo(x+9,y+17);g.stroke()}
     if(up==='#'){const d=envTile(env,tx,ty-2)==='#'?.38:.2;g.fillStyle=`rgba(0,0,0,${d})`;g.fillRect(x,y,TS,TS)}break}
   case'B':{g.fillStyle='#262a31';g.fillRect(x,y,TS,TS);g.fillStyle=vgrad(g,'B',y,y+TS,ST_B);g.fillRect(x+2,y+2,TS-4,TS-4);
@@ -827,8 +827,8 @@ function drawTile(g,c,x,y,tx,ty,env){
   case'!':{const on=env.check&&env.check.x===tx&&env.check.y===ty;
     g.strokeStyle='#4a423e';g.lineWidth=2.5;g.beginPath();g.moveTo(x+9,y+TS);g.lineTo(x+13,y+16);g.moveTo(x+23,y+TS);g.lineTo(x+19,y+16);g.moveTo(x+16,y+TS);g.lineTo(x+16,y+16);g.stroke();
     g.fillStyle='#5d5550';g.beginPath();g.moveTo(x+4,y+12);g.lineTo(x+28,y+12);g.lineTo(x+23,y+19);g.lineTo(x+9,y+19);g.closePath();g.fill();
-    {const hc=g.createLinearGradient(x,0,x,y+8);hc.addColorStop(0,'rgba(255,140,60,0)');hc.addColorStop(1,on?'rgba(255,170,80,.3)':'rgba(255,140,60,.12)');g.fillStyle=hc;g.fillRect(x+4,0,TS-8,y+8);
-      g.fillStyle=on?'rgba(255,220,160,.5)':'rgba(255,170,100,.25)';for(let k=0;k<4;k++){const ph=fract(t*.5+k*.25);g.fillRect(x+8+((k*7)%16)+Math.sin(t*3+k)*2,y+4-ph*y,2,6)}}
+    {const top=Math.floor(ty/ROWS)*ROWS*TS,hgt=y-top;g.fillStyle=vgrad(g,on?'bzOn':'bz',top,y+8,[[0,'rgba(255,140,60,0)'],[1,on?'rgba(255,170,80,.3)':'rgba(255,140,60,.12)']]);g.fillRect(x+4,top,TS-8,hgt+8);
+      g.fillStyle=on?'rgba(255,220,160,.5)':'rgba(255,170,100,.25)';for(let k=0;k<4;k++){const ph=fract(t*.5+k*.25);g.fillRect(x+8+((k*7)%16)+Math.sin(t*3+k)*2,y+4-ph*hgt,2,6)}}
     if(on){const fl=g.createRadialGradient(x+16,y+6,1,x+16,y+6,24);fl.addColorStop(0,'rgba(255,190,90,.6)');fl.addColorStop(1,'rgba(255,190,90,0)');g.fillStyle=fl;g.fillRect(x-10,y-20,52,44);
       for(let k=0;k<3;k++){const hgt=12+6*Math.sin(t*9+k*2.1),bx=x+10+k*6;g.fillStyle=k===1?'#ffd27a':'#ff7a1a';g.beginPath();g.moveTo(bx-4,y+12);g.quadraticCurveTo(bx,y+12-hgt,bx+4,y+12);g.closePath();g.fill()}}
     else{g.fillStyle='#2b2421';g.fillRect(x+7,y+9,18,4);g.fillStyle=`rgba(255,106,26,${.35+.25*Math.sin(t*2+tx)})`;g.fillRect(x+12,y+10,3,2);g.fillRect(x+18,y+9,2,2)}break}
@@ -1057,12 +1057,13 @@ function ensureAudio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudi
   if(AC&&!audioPrimed){try{const b=AC.createBuffer(1,1,22050),s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start(0);audioPrimed=true}catch(e){}}
   if(AC&&AC.state!=='running')AC.resume().then(audioState).catch(e=>LOG.add('audio',{error:'resume: '+String(e&&e.message||e).slice(0,200)}));if(AC&&typeof Music!=='undefined')Music.start()}
 function tone(f1,f2,dur,type,vol=.06,delay=0){if(!AC||muted)return;const t0=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f1,t0);o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.02)}
-function hiss(dur,vol=.05){if(!AC||muted)return;const n=AC.sampleRate*dur,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=2500;g.gain.value=vol;s.buffer=b;s.connect(f).connect(g).connect(AC.destination);s.start()}
+// One two-second noise buffer, made once; every hiss and thud plays a slice of it with a gain envelope.
+let NOISE=null;function noise(){if(!NOISE){const n=AC.sampleRate*2,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;NOISE=b}return NOISE}
+function hiss(dur,vol=.05){if(!AC||muted)return;const t0=AC.currentTime,s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=2500;g.gain.setValueAtTime(vol,t0);g.gain.linearRampToValueAtTime(0,t0+dur);s.buffer=noise();s.connect(f).connect(g).connect(AC.destination);s.start(t0,Math.random()*1.5,dur)}
 function whoomp(k=1){if(!AC||muted)return;const t0=AC.currentTime;
   const o=AC.createOscillator(),v=AC.createGain(),lp=AC.createBiquadFilter();o.type='triangle';o.frequency.setValueAtTime(190*k,t0);o.frequency.exponentialRampToValueAtTime(520*k,t0+.09);lp.type='lowpass';lp.frequency.value=2200;
   v.gain.setValueAtTime(0,t0);v.gain.linearRampToValueAtTime(.16,t0+.008);v.gain.exponentialRampToValueAtTime(.0001,t0+.16);o.connect(lp).connect(v).connect(AC.destination);o.start(t0);o.stop(t0+.18);
-  const n=Math.floor(AC.sampleRate*.14),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
-  const sr=AC.createBufferSource(),bp=AC.createBiquadFilter(),ng=AC.createGain();sr.buffer=b;bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueAtTime(600*k,t0);bp.frequency.exponentialRampToValueAtTime(2400*k,t0+.12);ng.gain.value=.11;sr.connect(bp).connect(ng).connect(AC.destination);sr.start(t0)}
+  const sr=AC.createBufferSource(),bp=AC.createBiquadFilter(),ng=AC.createGain();sr.buffer=noise();bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueAtTime(600*k,t0);bp.frequency.exponentialRampToValueAtTime(2400*k,t0+.12);ng.gain.setValueAtTime(.11,t0);ng.gain.linearRampToValueAtTime(0,t0+.14);sr.connect(bp).connect(ng).connect(AC.destination);sr.start(t0,Math.random()*1.5,.14)}
 const SFX={jump:()=>whoomp(1),wall:()=>whoomp(1.25),spring:()=>{hiss(.35,.08);tone(140,420,.2,'sawtooth',.03)},die:()=>{hiss(.4,.09);tone(320,50,.35,'sawtooth',.05)},
   gem:()=>{tone(660,990,.08,'triangle',.07);tone(990,1320,.1,'triangle',.05,.06)},check:()=>{hiss(.16,.022);tone(784,790,.5,'sine',.05);tone(1175,1180,.6,'sine',.034,.07);tone(1568,1575,.75,'sine',.022,.14)},
   win:()=>[392,523,659,784,1046].forEach((f,i)=>tone(f,f,.22,'square',.045,i*.1)),crumble:()=>{hiss(.18,.06);tone(120,60,.16,'triangle',.06)},
@@ -1076,16 +1077,16 @@ function updateMuteBtn(){$('#mMute').textContent='Sound: '+(muted?'off':'on')}
    a sparse music-box melody with echo and a long cavern reverb, a heartbeat thump, distant anvil clangs,
    and on the last level a thin whistle. Intensity rises with the level (tempo, heartbeat, clangs). */
 const Music=(()=>{
-  let on=store.get('tf-music',true),built=false,bus,rev,dly,timer=null,next=0,beat=0,level=0,mi=3,duck=false,hidden=false,gated=true,tstep=0;
+  let on=store.get('tf-music',true),built=false,bus,rev,dly,busOut=null,busOn=false,timer=null,next=0,beat=0,level=0,mi=3,duck=false,hidden=false,gated=true,tstep=0;
   const mf=m=>440*Math.pow(2,(m-69)/12);
   const PROG=[[50,53,57,62],[51,55,58,63],[50,53,57,62],[46,50,53,58]];
   const STEPS=[0,1,3,5,7,8,10,12,13,15];
   const bpm=()=>60; // one beat per second, the same beat the trip hammers and clock blocks keep
   const target=()=>on&&!hidden&&!gated?(duck?.1:.34):0;
   function ramp(){if(!built)return;const t=AC.currentTime;bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(bus.gain.value,t);bus.gain.linearRampToValueAtTime(target(),t+(target()>0?2.5:.6))}
-  function impulse(sec){const n=Math.floor(AC.sampleRate*sec),b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.8)}return b}
+  function impulse(sec){const n=Math.floor(AC.sampleRate*sec),b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);const k=Math.exp(-7/n);let e=1;for(let i=0;i<n;i++){d[i]=(Math.random()*2-1)*e;e*=k}}return b}
   function build(){
-    bus=AC.createGain();bus.gain.value=0;const comp=AC.createDynamicsCompressor();comp.threshold.value=-20;bus.connect(comp).connect(AC.destination);
+    bus=AC.createGain();bus.gain.value=0;const comp=AC.createDynamicsCompressor();comp.threshold.value=-20;bus.connect(comp).connect(AC.destination);busOut=comp;busOn=true;
     rev=AC.createConvolver();rev.buffer=impulse(1.8);const rg=AC.createGain();rg.gain.value=.6;rev.connect(rg).connect(bus);
     dly=AC.createDelay(2);dly.delayTime.value=.69;const fb=AC.createGain();fb.gain.value=.4;const dl=AC.createBiquadFilter();dl.type='lowpass';dl.frequency.value=1600;
     dly.connect(dl);dl.connect(fb);fb.connect(dly);dl.connect(rev);const dg=AC.createGain();dg.gain.value=.5;dl.connect(dg).connect(bus);
@@ -1140,12 +1141,12 @@ const Music=(()=>{
     if(e===0&&(bar<4||bar%2===0))anvil(t,bar<4?.05:.034);
     if(bar>=4&&bar<12){const row=MEL[bar-4],n=row[e];if(n>0){let k=1;while(e+k<8&&row[e+k]===-1)k++;lead(n,t,TSPB*k*.95)}}
     if(bar>=12&&e%2===0)bell(TCH[c][e/2]+12,t,.04)}
-  function tick(){if(!AC)return;if(gated){next=AC.currentTime+.06;return}
+  function tick(){if(!AC)return;if(gated){next=AC.currentTime+.06;return}if(next<AC.currentTime-1)next=AC.currentTime+.06;
     while(next<AC.currentTime+.3){if(level===0){titleStep(next,tstep++);next+=TSPB}else{play(next,beat);next+=60/bpm();beat++}}}
   function run(){if(timer||!on)return;next=AC.currentTime+.1;timer=setInterval(tick,60)}
-  function halt(){clearInterval(timer);timer=null}
+  function halt(){clearInterval(timer);timer=null;if(busOn&&bus){bus.disconnect();busOn=false}}
   return{
-    start(){if(!AC||!on)return;if(!built)build();run();ramp()},
+    start(){if(!AC||!on)return;if(!built)build();if(!busOn){bus.connect(busOut);busOn=true}if(timer)return;run();ramp()},
     setLevel(n){if((n===0)!==(level===0)){tstep=0;beat=0}level=n},
     // the intro releases the music on the logo's second stamp, so the theme's first downbeat lands with it
     cue(){gated=false;if(!AC||!on)return;if(!built)build();level=0;tstep=0;next=AC.currentTime+.04;run();const t=AC.currentTime;bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(bus.gain.value,t);bus.gain.linearRampToValueAtTime(target(),t+.3)},
@@ -1200,6 +1201,7 @@ cvs.addEventListener('pointerdown',()=>{if(screen==='play'&&V&&V.ending&&Ending.
 addEventListener('keydown',e=>{ensureAudio();const k=e.key;
   if(screen==='play'&&V&&V.ending){if([' ','Enter','Escape'].includes(k)){e.preventDefault();if(Ending.elapsed>1)finishEnding()}return}
   if(screen!=='play')return;
+  if(V&&V.paused){if((k==='Escape'||k==='p'||k==='P')&&!e.repeat)resume();return}
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(k))e.preventDefault();
   if(k==='ArrowLeft'||k==='a'||k==='A')input.kl=true;
   if(k==='ArrowRight'||k==='d'||k==='D')input.kr=true;
@@ -1209,7 +1211,7 @@ addEventListener('keydown',e=>{ensureAudio();const k=e.key;
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='ArrowLeft'||k==='a'||k==='A')input.kl=false;if(k==='ArrowRight'||k==='d'||k==='D')input.kr=false;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
-addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false});
+addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.tv=0;padPtrs.clear();gLeft=0});
 const pad=$('#pad'),padPtrs=new Map();const DEAD=8,LEASH=30,RAMP=20;
 // Re-grip grace: lifting the move thumb for a moment (to shift it mid-jump) keeps Ember moving the same way for
 // GRACE frames, and a thumb that comes back down inside that window carries on in that direction straight away.
@@ -1228,7 +1230,7 @@ jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCaptur
 // Safety net for a finger the browser forgets: iOS can swallow the "finger lifted" event (a system swipe, the app's own
 // gesture, a call banner), which used to leave Ember running on his own. When no finger is on the screen at all,
 // every touch control is released, and the log notes it so a stuck input shows up there.
-function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;jb.classList.remove('on');
+function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;input.tv=0;jb.classList.remove('on');
   if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
 for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0&&(padPtrs.size>0||input.tj))releaseTouch(ev)},{passive:true,capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch('hidden')});
@@ -1322,7 +1324,7 @@ const stamp=(u,t0)=>{const p=clamp((u-t0)/.2);return{a:p,s:1+.9*(1-ease(p))}};
 /* ---------------- audio ---------------- */
 let master=null,rev=null,bus=null,muted=false,SKIP=0;
 function audio(){ensureAudio();if(!AC)return;if(!master){master=AC.createGain();master.gain.value=.9;const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;master.connect(comp).connect(AC.destination);
-  rev=AC.createConvolver();const n=AC.sampleRate*3.2,b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}rev.buffer=b;const rg=AC.createGain();rg.gain.value=.55;rev.connect(rg).connect(master)}}
+  rev=AC.createConvolver();const n=AC.sampleRate*3.2,b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);const k=Math.exp(-7/n);let e=1;for(let i=0;i<n;i++){d[i]=(Math.random()*2-1)*e;e*=k}}rev.buffer=b;const rg=AC.createGain();rg.gain.value=.55;rev.connect(rg).connect(master)}}
 function newBus(){if(!AC)return null;if(bus){const old=bus;old.gain.setTargetAtTime(0,AC.currentTime,.08);setTimeout(()=>old.disconnect(),900)}bus=AC.createGain();bus.gain.value=muted?0:1;bus.connect(master);const wet=AC.createGain();wet.gain.value=1;bus.wet=wet;wet.connect(rev);wet.connect(bus);return bus}
 const mf=m=>440*Math.pow(2,(m-69)/12);
 function env(node,t,a,atk,hold,rel){node.gain.setValueAtTime(0,t);node.gain.linearRampToValueAtTime(a,t+atk);node.gain.setValueAtTime(a,t+atk+hold);node.gain.exponentialRampToValueAtTime(.0001,t+atk+hold+rel)}
@@ -1568,7 +1570,7 @@ function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.
       h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
       h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off')),
       h('button',{class:'btn ghost',id:'pUi',onclick:e=>{toggleUiSfx();e.currentTarget.textContent=uiLabel()}},uiLabel())))})}
-function resume(){closeModal();if(V)V.paused=false;Music.duck(false)}
+function resume(){closeModal();if(V)V.paused=false;input.pressed=false;input.kj=false;Music.duck(false)}
 $('#pauseBtn').addEventListener('click',()=>V&&(V.paused?resume():pause()));
 document.addEventListener('visibilitychange',()=>{Music.hide(document.hidden);if(document.hidden&&screen==='play'&&V&&!V.R.won&&!V.paused)pause()});
 function perfInfo(){const P=V&&V.perf;return P&&P.n?{fps:Math.round(P.n/P.sum),slowFrames:P.slow}:{}}
@@ -1716,8 +1718,9 @@ function tick(){if(!V||V.paused)return;const R=V.R;
   if(!R.p.dead){const tg=camTarget();V.cam.x+=(tg-V.cam.x)*.12;V.cam.y+=(camTargetY()-V.cam.y)*.12;if(R.clock%3===0&&Math.random()<.12+.6*R.heat/R.heatMax)V.parts.push({x:R.p.x+R.p.w/2+(Math.random()-.5)*8,y:R.p.y+8,vx:(Math.random()-.5)*.6-R.p.vx*.1,vy:-.6-Math.random(),life:22,max:22,c:Math.random()<.5?'#ffd27a':'#ff6a1a',s:2,g:-.01})}
 }
 const attract=makeRun(LEVELS[2].build(),{});
-const hudCache={};function setHud(id,v){if(hudCache[id]!==v){hudCache[id]=v;$('#'+id).textContent=v}}
+const hudCache={},HEAT_EL=$('#heatFill'),HEAT_CHIP=$('#heatChip');function setHud(id,v){if(hudCache[id]!==v){hudCache[id]=v;$('#'+id).textContent=v}}
 function render(t){
+  if(typeof Intro!=='undefined'&&Intro.active&&screen==='menu')return;
   if(screen==='play'&&V&&V.ending){if(Ending.draw(performance.now())===2)finishEnding();return}
   ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
   const playing=screen==='play'&&V;let R,camX,camY,clock;
@@ -1727,7 +1730,7 @@ function render(t){
   const env={grid:R.grid,w:R.w,rows:R.rows,h:R.h,crumb:R.crumb,springAnim:playing?V.springAnim:null,check:R.check,t,clock};
   let sx=0,sy=0;if(playing&&V.shake>0){sx=(Math.random()-.5)*V.shake;sy=(Math.random()-.5)*V.shake}
   {const vw=viewW;viewW=baseW;ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);drawBg(ctx,camX,t,th,clock,R.hasTimed);viewW=vw;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0)}
-  ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round((-camY+sy)*k)/k;ctx.translate(ox,oy);
+  ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round((-camY+sy)*k)/k;ctx.translate(ox,oy);ctx.lineCap='butt';ctx.setLineDash([]);
   const x0=Math.floor(camX/TS)-2,x1=Math.ceil((camX+viewW)/TS)+2;const late=[];
   const ry0=Math.max(0,Math.floor(camY/TS)-1),ry1=Math.min(env.rows-1,Math.ceil((camY+viewH)/TS)+1);
   for(let ty=ry0;ty<=ry1;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=env.w){drawWall(ctx,tx*TS,ty*TS,tx,ty,env.w);continue}
@@ -1747,10 +1750,10 @@ function render(t){
     for(const q of V.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.c;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s)}ctx.globalAlpha=1;ctx.restore();
     if(V.flash&&V.flash.a>.01){ctx.fillStyle=`rgba(${V.flash.c},${V.flash.a})`;ctx.fillRect(-2,-2,viewW+4,VH+4)}
     setHud('hudDeaths',String(R.deaths));setHud('hudTime',fmtTime(R.clock));setHud('hudGems',R.gems+'/'+R.gemsTotal);
-    const f=Math.max(0,R.heat/R.heatMax);$('#heatFill').style.transform=`scaleX(${f})`;$('#heatChip').classList.toggle('low',f<.25&&!R.p.dead)}
+    const f=Math.max(0,R.heat/R.heatMax),hf=+(f.toFixed(3));if(hudCache.heat!==hf){hudCache.heat=hf;HEAT_EL.style.transform=`scaleX(${hf})`}const low=f<.25&&!R.p.dead;if(hudCache.low!==low){hudCache.low=low;HEAT_CHIP.classList.toggle('low',low)}}
 }
 let last=performance.now(),acc=0;
-function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;acc+=dt*(screen==='play'&&V&&V.slow>0?.45:1);
+function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;else if(Math.abs(dt-1/60)<.002)dt=1/60;else if(Math.abs(dt-1/120)<.0015)dt=1/120;else if(Math.abs(dt-1/30)<.003)dt=1/30;acc+=dt*(screen==='play'&&V&&V.slow>0?.45:1);
   try{while(acc>=1/60){if(screen==='play')tick();acc-=1/60}render(now/1000)}catch(e){acc=0;if(!frame.errs||frame.errs<5){frame.errs=(frame.errs||0)+1;LOG.add('error',{msg:String(e&&e.message||e).slice(0,300),where:'frame',stack:e&&e.stack?String(e.stack).slice(0,600):undefined},true)}}
   if(screen==='play'&&V&&!V.paused&&!V.ending){const P=V.perf||(V.perf={n:0,sum:0,slow:0});P.n++;P.sum+=dt;if(dt>.034)P.slow++}
   requestAnimationFrame(frame)}
