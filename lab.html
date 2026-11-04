@@ -364,13 +364,13 @@ function terrain(name,items,start=6){const L=blank(name,1600);let x=G(L,0,start)
    away, and you drop down a shaft onto the start of the next tier. The start is on the top tier, the furnace on the bottom one. */
 function mirrorStrip(L){const g=L.grid.slice();const SW={'<':'>','>':'<'};for(let y=0;y<ROWS;y++)for(let x=0;x<L.w;x++){const c=L.grid[y*L.w+(L.w-1-x)];g[y*L.w+x]=SW[c]||c}return{name:L.name,w:L.w,grid:g}}
 /* Wells: what a shaft drops you into. 'ledges' is a five-wide well with one-way ledges that alternate sides, a cog on a
-   rail in the middle and a spike tooth under each ledge. 'grinder' is a four-wide well over lava, with one ledge on the left
+   rail in the middle. 'grinder' is a four-wide well over lava, with one ledge on the left
    wall, a grinder riding that wall above it, a doorway beside the ledge down a channel to a corridor under the well, a
    second grinder on the corridor ceiling and a lava pit before the first section. Both are built in the strip's own
    orientation and mirrored with it. */
 const WELL={
   ledges:{start:6,cols:[1,2,3,4,5],build(L){F(L,0,0,0,12,'B');F(L,6,6,0,10,'B');F(L,4,5,2,2,'-');F(L,1,2,5,5,'-');F(L,4,5,8,8,'-');F(L,1,2,11,11,'-');
-    P(L,5,7,'B');P(L,5,6,'^');P(L,1,8,'B');P(L,1,7,'^');P(L,3,9,'Q')}},
+    P(L,3,9,'Q')}},
   grinder:{start:10,cols:[2,3,4,5],build(L){F(L,1,1,0,10,'B');F(L,6,6,0,10,'B');F(L,1,1,6,7,'.');F(L,2,5,9,9,'~');F(L,2,5,10,10,'#');P(L,2,7,'-');P(L,2,2,'w');P(L,4,11,'w');pit(L,7,9)}},
 };
 function stack(name,tiers,wells=[]){const strips=tiers.map((items,k)=>{const w=k>0&&WELL[wells[k-1]];const S=terrain(name+' '+(k+1),items,w?w.start:6);if(w)w.build(S);return S});
