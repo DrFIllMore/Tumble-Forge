@@ -507,7 +507,7 @@ function step(R,inp){
     if(c==='*'&&!R.noGems&&hit(p.x,p.y,p.w,p.h,X+7,Y+7,18,18)){R.grid[ty*R.w+tx]='.';R.gems++;R.heat=Math.min(R.heatMax,R.heat+COAL_HEAT);R.fx.gem(R,X+16,Y+16)}
     if(c==='G'&&hit(p.x,p.y,p.w,p.h,X+6,Y-60,20,90)){R.won=true;R.fx.win(R);return'win'}
   }
-  for(const b of R.braz){if(p.x<b.x*TS+TS&&p.x+p.w>b.x*TS&&p.y<b.y*TS+TS){R.heat=R.heatMax;if(!(R.check&&R.check.x===b.x&&R.check.y===b.y)){R.check={x:b.x,y:b.y};R.fx.check(R,b.x*TS,b.y*TS)}}}
+  for(const b of R.braz){if(p.x<b.x*TS+TS&&p.x+p.w>b.x*TS&&p.y<b.y*TS+TS&&p.y+p.h>b.y*TS-3*TS){/* within three rows above the brazier: jumping over it lights it, a tier above does not */R.heat=R.heatMax;if(!(R.check&&R.check.x===b.x&&R.check.y===b.y)){R.check={x:b.x,y:b.y};R.fx.check(R,b.x*TS,b.y*TS)}}}
   for(const m of R.movers){const q=moverPos(m,R.clock),nx=clampN(q.x,hx,hx+hw),ny=clampN(q.y,hy,hy+hh);if((q.x-nx)*(q.x-nx)+(q.y-ny)*(q.y-ny)<169)return die(R,'hit')}
   if(R.hz){const r=hzStep(R,p,hx,hy,hw,hh);if(r)return r}
   if(p.y>R.h+30)return die(R,'melt');

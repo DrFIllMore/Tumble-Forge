@@ -403,7 +403,7 @@ const LEVELS=[
   build(){return terrain('Steam Vents',['E2','springs','hopFish','jetGap','!','springs','sideJet','H*','M2'])}},
  {id:'w2b',world:1,code:'2-2',heat:1920,fm:1719,name:'Vent Ceiling',intro:'Spikes over the vents. The throw is always the same, so where you land is all in your steering.',
   build(){return terrain('Vent Ceiling',['sideJet','springsC','H*','!','batGap','springsCO','ladleRun','Hp','E1'])}},
- {id:'w2c',world:1,code:'2-3',heat:1320,fm:2505,name:'Rail Cogs',intro:'A switchback: right, then left, then right, dropping a tier at each end. Cogs on rails keep a fixed beat. Count it once, then go.',
+ {id:'w2c',world:1,code:'2-3',heat:1800,fm:2505,name:'Rail Cogs',intro:'A switchback: right, then left, then right, dropping a tier at each end. Cogs on rails keep a fixed beat. Count it once, then go.',
   build(){return stack('Rail Cogs',[['movers','H*','ladlePits'],['!','pistonPit','slideGap','moversC'],['!','M2*','fireGap2','H','E2']])}},
  {id:'w2d',world:1,code:'2-4',heat:1800,fm:1778,name:'Saw Chimney',intro:'A saw waits inside this chimney. Climb on the wall away from it.',
   build(){return terrain('Saw Chimney',['H','chim','hookFloor','spikeRun','M2*','!','chimSaw','Hp','hookPit'])}},
@@ -501,7 +501,7 @@ function step(R,inp){
     if(c==='*'&&!R.noGems&&hit(p.x,p.y,p.w,p.h,X+7,Y+7,18,18)){R.grid[ty*R.w+tx]='.';R.gems++;R.heat=Math.min(R.heatMax,R.heat+COAL_HEAT);R.fx.gem(R,X+16,Y+16)}
     if(c==='G'&&hit(p.x,p.y,p.w,p.h,X+6,Y-60,20,90)){R.won=true;R.fx.win(R);return'win'}
   }
-  for(const b of R.braz){if(p.x<b.x*TS+TS&&p.x+p.w>b.x*TS&&p.y<b.y*TS+TS){R.heat=R.heatMax;if(!(R.check&&R.check.x===b.x&&R.check.y===b.y)){R.check={x:b.x,y:b.y};R.fx.check(R,b.x*TS,b.y*TS)}}}
+  for(const b of R.braz){if(p.x<b.x*TS+TS&&p.x+p.w>b.x*TS&&p.y<b.y*TS+TS&&p.y+p.h>b.y*TS-3*TS){/* within three rows above the brazier: jumping over it lights it, a tier above does not */R.heat=R.heatMax;if(!(R.check&&R.check.x===b.x&&R.check.y===b.y)){R.check={x:b.x,y:b.y};R.fx.check(R,b.x*TS,b.y*TS)}}}
   for(const m of R.movers){const q=moverPos(m,R.clock),nx=clampN(q.x,hx,hx+hw),ny=clampN(q.y,hy,hy+hh);if((q.x-nx)*(q.x-nx)+(q.y-ny)*(q.y-ny)<169)return die(R,'hit')}
   if(R.hz){const r=hzStep(R,p,hx,hy,hw,hh);if(r)return r}
   if(p.y>R.h+30)return die(R,'melt');
@@ -629,7 +629,7 @@ const PROOF={"k":3,"f1":"5fdfec2ec2fd3fecf2d4f2e2fd2ab3e2f2ec2ec2feba2cadf3ec2e2
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-04 v42';
+const BUILD='2026-11-04 v43';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
