@@ -265,10 +265,10 @@ const GATE={
   M2:(L,s)=>{G(L,s,1);P(L,s,12,'X');F(L,s-5,s+7,10,10,'v');return[s+1,s+7]},
   M3:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'X');return[s+3,s+11]},
   H:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');return[s+3,0]},
-  Hp:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');F(L,s-6,s+10,9,9,'v');return[s+3,s+10]},
+  Hp:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');F(L,s-6,s+6,8,8,'v');return[s+3,s+10]},// spikes 5 rows up, and not over the next gate: a full jump clears the three cogs with room to spare
   X:(L,s)=>{pit(L,s,s+3);F(L,s-5,s+13,10,10,'v');return[s+4,s+13]},
   Xp:(L,s)=>{pit(L,s,s+3);F(L,s-5,s+13,10,10,'v');P(L,s+3,10,'X');return[s+4,s+13]},
-  Y:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');F(L,s-6,s+10,9,9,'v');P(L,s-1,10,'X');return[s+3,s+10]},
+  Y:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');F(L,s-6,s+6,8,8,'v');P(L,s-1,10,'X');return[s+3,s+10]},
   Z:(L,s)=>{pit(L,s,s+3);F(L,s-5,s+13,10,10,'X');return[s+4,s+13]},
 };
 function gate(L,x,k,coal){G(L,x,6);const s=x+6;const[e,ce]=GATE[k](L,s);if(coal)P(L,s+Math.floor((e-s-1)/2),k==='H'?9:11,'*');return G(L,e,Math.max(6,ce-e+2))}
