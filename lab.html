@@ -338,9 +338,9 @@ Object.assign(SEC,{
   hopFish:(L,x,coal)=>{G(L,x,2);let y=x+2;for(let k=0;k<4;k++){F(L,y,y,13,13,'.');F(L,y,y,14,14,'V');F(L,y+1,y+1,13-(k%2),14,'#');y+=2}F(L,y,y,13,13,'.');F(L,y,y,14,14,'V');G(L,y+1,3);if(coal)P(L,x+6,9,'*');return y+4},
   ricochet:(L,x,coal)=>{G(L,x,14);F(L,x+3,x+3,8,11,'B');F(L,x+10,x+10,8,11,'B');F(L,x+3,x+10,8,8,'B');P(L,x+6,10,'o');if(coal)P(L,x+8,12,'*');return x+14},
   ricochet2:(L,x,coal)=>{G(L,x,16);F(L,x+3,x+3,7,11,'B');F(L,x+12,x+12,7,11,'B');F(L,x+3,x+12,7,7,'B');P(L,x+5,9,'o');P(L,x+10,10,'o');if(coal)P(L,x+8,12,'*');return x+16},
-  // World 2 finale for 2-3: five one-tile pillars in lava, two-tile gaps, a grinder on one face of each gap, flame balls in the jump-up gaps, the red-hot drone overhead
+  // World 2 finale for 2-3: five one-tile pillars in lava, two-tile gaps, a grinder circling each of the first four, flame balls in the jump-up gaps, the red-hot drone overhead
   grindPillars:(L,x,coal)=>{pit(L,x,x+16);for(const[d,top]of[[2,11],[5,12],[8,11],[11,12],[14,11]])F(L,x+d,x+d,top,13,'B');
-    P(L,x+3,12,'w');P(L,x+7,12,'w');P(L,x+9,12,'w');P(L,x+13,12,'w');P(L,x+6,14,'F');P(L,x+12,14,'L');P(L,x,6,'k');if(coal)P(L,x+8,8,'*');return x+17},
+    P(L,x+3,12,'u');P(L,x+6,12,'u');P(L,x+9,12,'u');P(L,x+12,12,'u');P(L,x+6,14,'F');P(L,x+12,14,'L');P(L,x,6,'k');if(coal)P(L,x+8,8,'*');return x+17},
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
 });
 
@@ -537,8 +537,9 @@ function step(R,inp){
  A      slag balloon on a fixed path, drops cinders on a rhythm
  H      hunter drone: follows Ember and drops when lined up
  k      the same drone red-hot: faster, lower, drops two cinders, reloads in half the time
+ u      wrap grinder: circles the pillar beside it, over the top and back underneath
  E      leaping cinder: jumps out of the lava on a rhythm */
-const HZ_CH='JKW<>DNAHEFLPyZRVowk';
+const HZ_CH='JKW<>DNAHEFLPyZRVowku';
 const hzh=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000;
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
 function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[]};let any=false;
@@ -564,6 +565,11 @@ function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drop
       else{const wy=side==='U'?ty-1:ty+1;let a=tx,b=tx;while(a>0&&sol(a-1,wy)&&!sol(a-1,ty))a--;while(b<R.w-1&&sol(b+1,wy)&&!sol(b+1,ty))b++;
         hz.grinders.push({v:false,y:side==='U'?Y:Y+TS,lo:a*TS+16,hi:b*TS+16,per:Math.max(60,Math.round(2*(b-a)*TS/1.4)),ph:(ty*53)%200,dir:side==='U'?1:-1})}
       R.grid[i]='.'}
+    else if(ch==='u'){/* a wrap grinder circles the pillar beside it: up one face, over the top, down the other, back underneath */
+      const sol=(x,y)=>x>=0&&x<R.w&&y>=0&&y<R.rows&&SOLID.has(R.grid[y*R.w+x]);const cx=sol(tx-1,ty)?tx-1:tx+1;let a=ty,b=ty;while(a>0&&sol(cx,a-1))a--;while(b<R.rows-1&&sol(cx,b+1))b++;
+      let x0=cx,x1=cx;while(x0>0&&sol(x0-1,a))x0--;while(x1<R.w-1&&sol(x1+1,a))x1++;
+      const L=x0*TS,Rt=(x1+1)*TS,T=a*TS,B=(b+1)*TS,w=Rt-L,h=B-T,len=2*(w+h),per=Math.round(len/1.4);
+      hz.grinders.push({loop:true,L,Rt,T,B,w,h,len,per,ph:(tx*53)%per,dir:1});R.grid[i]='.'}
     else if(ch==='o'){let a=tx,b=tx,u=ty,d=ty;while(a>0&&!SOLID.has(R.grid[ty*R.w+a-1]))a--;while(b<R.w-1&&!SOLID.has(R.grid[ty*R.w+b+1]))b++;while(u>0&&!SOLID.has(R.grid[(u-1)*R.w+tx]))u--;while(d<R.rows-1&&!SOLID.has(R.grid[(d+1)*R.w+tx]))d++;
       hz.ricos.push({x0:X+16,y0:Y+16,bx0:a*TS+9,bx1:(b+1)*TS-9,by0:u*TS+9,by1:(d+1)*TS-9,vx:2.6,vy:1.9});R.grid[i]='.'}}
   hz.slides.sort((a,b)=>a.x0-b.x0);hz.slides.forEach((s,k)=>s.ph=(k*124)%248);
@@ -600,7 +606,9 @@ function slideY(R,p,prevBot){p.ride2=-1;const c=R.clock,ss=R.hz.slides;if(p.vy<-
 function fishPos(fh,c,k){const f=((c+fh.off)%fh.per+fh.per)%fh.per-k*16;if(f<0||f>=56)return null;const d=k%2?-fh.dir:fh.dir;return{x:fh.x,y:fh.base-(8.2*f-.146*f*f),f,d}}
 function batPos(b,c){return{x:b.x0+triP(c+b.off,b.per)*b.span,y:b.y0+Math.sin((c+b.off)*.16)*5}}
 /* Wall grinder: a toothed wheel half sunk into a wall or ceiling, rolling back and forth along it. */
-function grinderPos(g,c){const u=triP(c+g.ph,g.per),q=g.lo+(g.hi-g.lo)*u;return g.v?{x:g.x,y:q}:{x:q,y:g.y}}
+function grinderPos(g,c){if(g.loop){// clockwise round the pillar from the bottom-left corner: up the left face, across the top, down the right face, back along the bottom
+    let d=(((c+g.ph)%g.per)+g.per)%g.per*1.4;if(d<g.h)return{x:g.L,y:g.B-d,nx:1,ny:0};d-=g.h;if(d<g.w)return{x:g.L+d,y:g.T,nx:0,ny:1};d-=g.w;if(d<g.h)return{x:g.Rt,y:g.T+d,nx:-1,ny:0};d-=g.h;return{x:g.Rt-d,y:g.B,nx:0,ny:-1}}
+  const u=triP(c+g.ph,g.per),q=g.lo+(g.hi-g.lo)*u;return g.v?{x:g.x,y:q,nx:-g.dir,ny:0}:{x:q,y:g.y,nx:0,ny:-g.dir}}
 /* Ricochet ball: bounces round its chamber at a fixed speed, so its path repeats. */
 function ricoPos(r,c){const fold=(v,L)=>{if(L<=0)return 0;v=((v%(2*L))+2*L)%(2*L);return v>L?2*L-v:v};return{x:r.bx0+fold(r.x0-r.bx0+r.vx*c,r.bx1-r.bx0),y:r.by0+fold(r.y0-r.by0+r.vy*c,r.by1-r.by0)}}
 function circHit(cx,cy,r,hx,hy,hw,hh){const nx=clampN(cx,hx,hx+hw),ny=clampN(cy,hy,hy+hh);return(cx-nx)*(cx-nx)+(cy-ny)*(cy-ny)<r*r}
@@ -1001,12 +1009,12 @@ function drawGrinder(g,q,gr,clock,t,px,py){const a=clock*.12*gr.dir;g.save();g.t
   const eg=g.createRadialGradient(-2,-2,1,0,0,8);eg.addColorStop(0,'#fff1c9');eg.addColorStop(.4,'#ffb347');eg.addColorStop(1,'#c2410c');g.fillStyle=eg;g.beginPath();g.arc(0,0,7.5,0,7);g.fill();
   const ex=Math.atan2(py-q.y,px-q.x);g.fillStyle='#2a0d03';g.beginPath();g.ellipse(2.5*Math.cos(ex),2.5*Math.sin(ex),2,4,ex,0,7);g.fill();
   // sparks on the wall side
-  const sx=gr.v?-gr.dir*17:0,sy=gr.v?0:-gr.dir*17;g.strokeStyle='#ffd27a';g.lineWidth=1.5;for(let k=0;k<3;k++){const f=fract(t*7+k*.37),len=4+8*f;g.globalAlpha=1-f;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+(gr.v?-gr.dir*len:(k-1)*len),sy+(gr.v?(k-1)*len:-gr.dir*len));g.stroke()}g.globalAlpha=1;
+  const nx=q.nx,ny=q.ny,sx=nx*17,sy=ny*17;g.strokeStyle='#ffd27a';g.lineWidth=1.5;for(let k=0;k<3;k++){const f=fract(t*7+k*.37),len=4+8*f;g.globalAlpha=1-f;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+nx*len+ny*(k-1)*len,sy+ny*len+nx*(k-1)*len);g.stroke()}g.globalAlpha=1;
   g.restore()}
 function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
   for(const gr of hz.grinders){const q=grinderPos(gr,clock);
     // scorch streak along the patrol
-    g.fillStyle='rgba(255,120,40,.18)';if(gr.v)g.fillRect(gr.x-(gr.dir>0?4:0),gr.lo-16,4,gr.hi-gr.lo+32);else g.fillRect(gr.lo-16,gr.y-(gr.dir>0?4:0),gr.hi-gr.lo+32,4);
+    g.fillStyle='rgba(255,120,40,.18)';if(gr.loop){g.fillRect(gr.L,gr.T-4,gr.w,4);g.fillRect(gr.L-4,gr.T,4,gr.h);g.fillRect(gr.Rt,gr.T,4,gr.h)}else if(gr.v)g.fillRect(gr.x-(gr.dir>0?4:0),gr.lo-16,4,gr.hi-gr.lo+32);else g.fillRect(gr.lo-16,gr.y-(gr.dir>0?4:0),gr.hi-gr.lo+32,4);
     drawGrinder(g,q,gr,clock,t,R.p.x+11,R.p.y+13)}
   for(const s of hz.slides)drawSlide(g,s,slideX(s,clock),t);
   for(const sp of hz.spikes)drawSpikes(g,sp,t);
@@ -1220,7 +1228,7 @@ function makeFx(V){
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
       if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
-      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>wall grinder</b>. It rolls along its wall or ceiling and back. Stay off its wall until it has passed.'};
+      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.'};
        if(HZN[why]&&!V.replay){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
       if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
