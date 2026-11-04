@@ -35,6 +35,7 @@ New hazards by world (every one warns before it can hurt you, and behaves the sa
 |-------|---------|
 | 1 | Beat jets (flame columns in the gaps on the hammer beat), trap jets (fire when you come close) |
 | 2 | Side jets, the ladle (pours slag on a rhythm), hanging anvils (drop, rest, get hauled back up) |
+| 2 | Wall grinders (toothed wheels that roll along a wall or ceiling and back; stay off their wall until they have passed), in the wells at the foot of 2-3's drops |
 | 2 | Forge bats (fly at jump height, drop a slag bomb that splits into fire running both ways), sliding platforms (planks on rails, half a cycle apart), landing spikes (pop a third of a second after you land), bone fish (leap straight up from the gaps between one-block pillars, in ones, twos and threes), ricochet balls (bounce round a walled chamber) |
 | 3 | Fire-biters (chomping heads that leap from the lava), the slag balloon (drops cinders from its basket) |
 | 1 onward | Flame balls that shoot up out of gaps and fall back (single, or two taking turns) |
