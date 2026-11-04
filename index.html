@@ -352,7 +352,7 @@ function lift(L,X,S,k){const T=S.T;for(let c=0;c<S.w;c++){for(let y=0;y<ROWS;y++
     if(k>0){const bot=T.grid[(ROWS-1)*T.w+c];if(bot==='^')L.grid[(ROWS-1-k)*L.w+X+c]='~';if(bot!=='.')for(let y=ROWS-k;y<ROWS;y++)L.grid[y*L.w+X+c]=bot==='B'?'B':'#'}}return X+S.w}
 function joinTo(L,x,fa,fb){const col=(x,f)=>F(L,x,x+1,f,ROWS-1,'#');col(x,fa);x+=2;
   if(fb<fa){let f=fa;while(f-2>fb){f-=2;col(x,f);x+=2}col(x,fb);x+=2}else if(fb>fa){col(x,fb);x+=2}return x}
-function terrain(name,items){const L=blank(name,1600);let x=G(L,0,6);P(L,2,12,'S');let f=13;const rnd=seeded(name);
+function terrain(name,items,start=6){const L=blank(name,1600);let x=G(L,0,start);P(L,2,12,'S');let f=13;const rnd=seeded(name);
   for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;const S=piece(it,coal);const maxK=Math.max(0,Math.min(8,S.r0-1));
     const k=13-f;let nk=0;if(maxK>0){const steps=[-4,-3,-2,2,3,4];for(let t=0;t<16;t++){nk=k+steps[Math.floor(rnd()*steps.length)];if(nk>=0&&nk<=maxK)break;nk=-1}if(nk<0)nk=Math.min(maxK,k)}
     const nf=13-nk;x=joinTo(L,x,f,nf);x=lift(L,x,S,nk);f=nf}
@@ -363,19 +363,30 @@ function terrain(name,items){const L=blank(name,1600);let x=G(L,0,6);P(L,2,12,'S
    every second one mirrored so the route runs right, then left, then right. At the end of each tier the floor is cut
    away, and you drop down a shaft onto the start of the next tier. The start is on the top tier, the furnace on the bottom one. */
 function mirrorStrip(L){const g=L.grid.slice();const SW={'<':'>','>':'<'};for(let y=0;y<ROWS;y++)for(let x=0;x<L.w;x++){const c=L.grid[y*L.w+(L.w-1-x)];g[y*L.w+x]=SW[c]||c}return{name:L.name,w:L.w,grid:g}}
-function stack(name,tiers){const strips=tiers.map((items,k)=>terrain(name+' '+(k+1),items));
+/* Wells: what a shaft drops you into. 'ledges' is a five-wide well with one-way ledges that alternate sides, a cog on a
+   rail in the middle and a spike tooth under each ledge. 'grinder' is a four-wide well over lava, with one ledge on the left
+   wall, a grinder riding that wall above it, a doorway beside the ledge down a channel to a corridor under the well, a
+   second grinder on the corridor ceiling and a lava pit before the first section. Both are built in the strip's own
+   orientation and mirrored with it. */
+const WELL={
+  ledges:{start:6,cols:[1,2,3,4,5],build(L){F(L,0,0,0,12,'B');F(L,6,6,0,10,'B');F(L,4,5,2,2,'-');F(L,1,2,5,5,'-');F(L,4,5,8,8,'-');F(L,1,2,11,11,'-');
+    P(L,5,7,'B');P(L,5,6,'^');P(L,1,8,'B');P(L,1,7,'^');P(L,3,9,'Q')}},
+  grinder:{start:10,cols:[2,3,4,5],build(L){F(L,1,1,0,10,'B');F(L,6,6,0,10,'B');F(L,1,1,6,7,'.');F(L,2,5,9,9,'~');F(L,2,5,10,10,'#');P(L,2,7,'-');P(L,2,2,'w');P(L,4,11,'w');pit(L,7,9)}},
+};
+function stack(name,tiers,wells=[]){const strips=tiers.map((items,k)=>{const w=k>0&&WELL[wells[k-1]];const S=terrain(name+' '+(k+1),items,w?w.start:6);if(w)w.build(S);return S});
   // tier k+1 hangs under the end of tier k: a mirrored tier is right-aligned to that end, a forward tier left-aligned to it
   const off=[0];for(let k=1;k<strips.length;k++){const endPrev=k%2===1?off[k-1]+strips[k-1].w:off[k-1];off.push(k%2===1?endPrev-strips[k].w:endPrev)}
   const lo=Math.min(...off),W=Math.max(...off.map((o,k)=>o+strips[k].w))-lo;const n=strips.length;const out=Array(W*ROWS*n).fill('.');
   strips.forEach((S,k)=>{const o=off[k]-lo,first=k===0,last=k===n-1;let L={name:S.name,w:S.w,grid:S.grid.slice()};
     for(let i=0;i<L.grid.length;i++){if(L.grid[i]==='S'&&!first)L.grid[i]='.';if(L.grid[i]==='G'&&!last)L.grid[i]='.';if(L.grid[i]==='^'&&!last)L.grid[i]='~'}
-    if(!last)for(let x=S.w-3;x<S.w;x++){L.grid[13*S.w+x]='.';L.grid[14*S.w+x]='.'}// drop shaft at the end of the tier
     if(k%2===1)L=mirrorStrip(L);
     for(let y=0;y<ROWS;y++)for(let x=0;x<S.w;x++)out[(k*ROWS+y)*W+o+x]=L.grid[y*S.w+x];
     // a wall just outside the start of a tier, so you cannot walk off the back of it
     const wx=k%2===1?o+S.w:o-1;if(wx>=0&&wx<W)for(let y=0;y<ROWS;y++)out[(k*ROWS+y)*W+wx]='B';
     // and a wall past the end of the tier, so the only way on is down the shaft
     if(!last){const ex=k%2===1?o-1:o+S.w;if(ex>=0&&ex<W)for(let y=0;y<ROWS;y++)out[(k*ROWS+y)*W+ex]='B'}});
+  strips.forEach((S,k)=>{if(k===n-1)return;const w=WELL[wells[k]],cols=w?w.cols:[0,1,2],N=strips[k+1],on=off[k+1]-lo;
+    for(const c of cols){const x=on+((k+1)%2===1?N.w-1-c:c);for(const y of[13,14])out[(k*ROWS+y)*W+x]='.'}});
   return{name,w:W,grid:out}}
 const WORLDS=[{name:'Slag Run',top:5,color:'#ffc15e'},{name:'Bellows',top:4,color:'#ffa04a'},{name:'Trip Hammer',top:3,color:'#ff7a2a'},{name:'Quench',top:2,color:'#ff5a2a'},{name:'Crucible',top:1,color:'#ff3b30'}];
 const LEVELS=[
@@ -403,8 +414,8 @@ const LEVELS=[
   build(){return terrain('Steam Vents',['E2','springs','hopFish','jetGap','!','springs','sideJet','H*','M2'])}},
  {id:'w2b',world:1,code:'2-2',heat:1920,fm:1719,name:'Vent Ceiling',intro:'Spikes over the vents. The throw is always the same, so where you land is all in your steering.',
   build(){return terrain('Vent Ceiling',['sideJet','springsC','H*','!','batGap','springsCO','ladleRun','Hp','E1'])}},
- {id:'w2c',world:1,code:'2-3',heat:1800,fm:2505,name:'Rail Cogs',intro:'A switchback: right, then left, then right, dropping a tier at each end. Cogs on rails keep a fixed beat. Count it once, then go.',
-  build(){return stack('Rail Cogs',[['movers','H*','ladlePits'],['!','pistonPit','slideGap','moversC'],['!','M2*','fireGap2','H','E2']])}},
+ {id:'w2c',world:1,code:'2-3',heat:1800,fm:2505,name:'Rail Cogs',intro:'A switchback: right, then left, then right. The first drop is a well of ledges; the second is a well over lava with <b>grinders</b> on the wall. Cogs on rails keep a fixed beat. Count it once, then go.',
+  build(){return stack('Rail Cogs',[['movers','H*','ladlePits'],['!','pistonPit','slideGap','moversC'],['!','M2*','fireGap2','H','E2']],['ledges','grinder'])}},
  {id:'w2d',world:1,code:'2-4',heat:1800,fm:1778,name:'Saw Chimney',intro:'A saw waits inside this chimney. Climb on the wall away from it.',
   build(){return terrain('Saw Chimney',['H','chim','hookFloor','spikeRun','M2*','!','chimSaw','Hp','hookPit'])}},
  {id:'w2e',world:1,code:'2-5',heat:2580,fm:2091,name:'First Beat',intro:'Molten plates are solid for one hammer beat, cold plates for the next. Listen for the hammer.',
@@ -517,10 +528,10 @@ function step(R,inp){
  A      slag balloon on a fixed path, drops cinders on a rhythm
  H      hunter drone: follows Ember and drops when lined up
  E      leaping cinder: jumps out of the lava on a rhythm */
-const HZ_CH='JKW<>DNAHEFLPyZRVo';
+const HZ_CH='JKW<>DNAHEFLPyZRVow';
 const hzh=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000;
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
-function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[]};let any=false;
+function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[]};let any=false;
   for(let i=0;i<R.grid.length;i++){const ch=R.grid[i];if(ch==='.'||!HZ_CH.includes(ch))continue;any=true;const tx=i%R.w,ty=(i/R.w)|0,X=tx*TS,Y=ty*TS;
     if(ch==='J'||ch==='K'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:ch==='J'?0:60,trap:false,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~';R.hasTimed=true}
     else if(ch==='W'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:0,trap:true,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~'}
@@ -536,6 +547,13 @@ function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drop
     else if(ch==='Z'){const last=hz.slides[hz.slides.length-1];if(last&&last.row===ty&&last.x0+last.len===X)last.len+=TS;else hz.slides.push({x0:X,y:Y,row:ty,len:TS,w:64,per:100,hold:24,ph:(hz.slides.length*124)%248});R.grid[i]='.'}
     else if(ch==='R'){hz.spikes.push({x:X,y:Y,st:0,t:0})}
     else if(ch==='V'){const h=hzh(tx,ty);hz.fish.push({x:X+16,base:Y+12,per:150+h%90,off:hzh(tx,5)%240,n:1+h%3,dir:h%2?1:-1});R.grid[i]=ty===R.rows-1?'^':'~'}
+    else if(ch==='w'){/* a grinder clings to the nearest wall and patrols along it as far as the wall runs */
+      const sol=(x,y)=>x>=0&&x<R.w&&y>=0&&y<R.rows&&SOLID.has(R.grid[y*R.w+x]);let side=sol(tx-1,ty)?'L':sol(tx+1,ty)?'R':sol(tx,ty-1)?'U':'D';
+      if(side==='L'||side==='R'){const wx=side==='L'?tx-1:tx+1;let a=ty,b=ty;while(a>0&&sol(wx,a-1)&&!sol(tx,a-1))a--;while(b<R.rows-1&&sol(wx,b+1)&&!sol(tx,b+1))b++;
+        hz.grinders.push({v:true,x:side==='L'?X:X+TS,lo:a*TS+16,hi:b*TS+16,per:Math.max(60,Math.round(2*(b-a)*TS/1.4)),ph:(tx*53)%200,dir:side==='L'?1:-1})}
+      else{const wy=side==='U'?ty-1:ty+1;let a=tx,b=tx;while(a>0&&sol(a-1,wy)&&!sol(a-1,ty))a--;while(b<R.w-1&&sol(b+1,wy)&&!sol(b+1,ty))b++;
+        hz.grinders.push({v:false,y:side==='U'?Y:Y+TS,lo:a*TS+16,hi:b*TS+16,per:Math.max(60,Math.round(2*(b-a)*TS/1.4)),ph:(ty*53)%200,dir:side==='U'?1:-1})}
+      R.grid[i]='.'}
     else if(ch==='o'){let a=tx,b=tx,u=ty,d=ty;while(a>0&&!SOLID.has(R.grid[ty*R.w+a-1]))a--;while(b<R.w-1&&!SOLID.has(R.grid[ty*R.w+b+1]))b++;while(u>0&&!SOLID.has(R.grid[(u-1)*R.w+tx]))u--;while(d<R.rows-1&&!SOLID.has(R.grid[(d+1)*R.w+tx]))d++;
       hz.ricos.push({x0:X+16,y0:Y+16,bx0:a*TS+9,bx1:(b+1)*TS-9,by0:u*TS+9,by1:(d+1)*TS-9,vx:2.6,vy:1.9});R.grid[i]='.'}}
   hz.slides.sort((a,b)=>a.x0-b.x0);hz.slides.forEach((s,k)=>s.ph=(k*124)%248);
@@ -571,6 +589,8 @@ function slideY(R,p,prevBot){p.ride2=-1;const c=R.clock,ss=R.hz.slides;if(p.vy<-
 /* Bone fish: 1 to 3 leap straight up out of a gap in quick succession, jaws snapping, and fall back. The water bubbles first. */
 function fishPos(fh,c,k){const f=((c+fh.off)%fh.per+fh.per)%fh.per-k*16;if(f<0||f>=56)return null;const d=k%2?-fh.dir:fh.dir;return{x:fh.x,y:fh.base-(8.2*f-.146*f*f),f,d}}
 function batPos(b,c){return{x:b.x0+triP(c+b.off,b.per)*b.span,y:b.y0+Math.sin((c+b.off)*.16)*5}}
+/* Wall grinder: a toothed wheel half sunk into a wall or ceiling, rolling back and forth along it. */
+function grinderPos(g,c){const u=triP(c+g.ph,g.per),q=g.lo+(g.hi-g.lo)*u;return g.v?{x:g.x,y:q}:{x:q,y:g.y}}
 /* Ricochet ball: bounces round its chamber at a fixed speed, so its path repeats. */
 function ricoPos(r,c){const fold=(v,L)=>{if(L<=0)return 0;v=((v%(2*L))+2*L)%(2*L);return v>L?2*L-v:v};return{x:r.bx0+fold(r.x0-r.bx0+r.vx*c,r.bx1-r.bx0),y:r.by0+fold(r.y0-r.by0+r.vy*c,r.by1-r.by0)}}
 function circHit(cx,cy,r,hx,hy,hw,hh){const nx=clampN(cx,hx,hx+hw),ny=clampN(cy,hy,hy+hh);return(cx-nx)*(cx-nx)+(cy-ny)*(cy-ny)<r*r}
@@ -617,6 +637,7 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
   for(const fh of hz.fish){const f0=((c+fh.off)%fh.per+fh.per)%fh.per;if(f0===fh.per-24)ev('bubble',fh.x,fh.base);
     for(let k=0;k<fh.n;k++){const q=fishPos(fh,c,k);if(!q)continue;if(q.f===0)ev('leap',fh.x,fh.base);if(circHit(q.x,q.y,9,hx,hy,hw,hh))return die(R,'fish')}}
   for(const r of hz.ricos){const q=ricoPos(r,c);if(circHit(q.x,q.y,9,hx,hy,hw,hh))return die(R,'ball')}
+  for(const g of hz.grinders){const q=grinderPos(g,c);if(circHit(q.x,q.y,19,hx,hy,hw,hh))return die(R,'grinder')}
   return null}
 const ACTS=[[-1,0],[-1,1],[0,0],[0,1],[1,0],[1,1]];
 /*ENGINE-END*/
@@ -629,7 +650,7 @@ const PROOF={"k":3,"f1":"5fdfec2ec2fd3fecf2d4f2e2fd2ab3e2f2ec2ec2feba2cadf3ec2e2
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-04 v43';
+const BUILD='2026-11-04 v44';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
@@ -957,7 +978,22 @@ function drawSpikes(g,sp,t){const x=sp.x,y=sp.y;if(sp.st===1){const a=.4+.6*Math
 function drawRico(g,q,t){for(let k=5;k>=1;k--){g.fillStyle=`rgba(255,110,30,${.32-k*.05})`;g.beginPath();g.arc(q.x,q.y,10-k*1.2,0,7);g.fill()}
   const gr=g.createRadialGradient(q.x-3,q.y-3,1,q.x,q.y,10);gr.addColorStop(0,'#fff1c9');gr.addColorStop(.4,'#ffb347');gr.addColorStop(.8,'#c2410c');gr.addColorStop(1,'#5a1a06');g.fillStyle=gr;g.beginPath();g.arc(q.x,q.y,9.5,0,7);g.fill();
   g.strokeStyle='rgba(60,20,8,.7)';g.lineWidth=1.5;g.beginPath();g.arc(q.x,q.y,6,t*6,t*6+1.6);g.stroke()}
+// Wall grinder: iron disc with hooked teeth, a furnace porthole and one molten eye that follows Ember; sparks where the teeth bite the wall
+function drawGrinder(g,q,gr,clock,t,px,py){const a=clock*.12*gr.dir;g.save();g.translate(q.x,q.y);
+  g.save();g.rotate(a);g.fillStyle='#262a31';g.beginPath();g.arc(0,0,17,0,7);g.fill();g.strokeStyle='#8d95a1';g.lineWidth=2;g.stroke();
+  g.fillStyle='#a9b0bb';g.strokeStyle='#4a5260';g.lineWidth=1;for(let k=0;k<8;k++){const b=k*Math.PI/4;g.beginPath();g.moveTo(17*Math.cos(b),17*Math.sin(b));g.lineTo(24*Math.cos(b+.3),24*Math.sin(b+.3));g.lineTo(17*Math.cos(b+.55),17*Math.sin(b+.55));g.closePath();g.fill();g.stroke()}
+  g.fillStyle='#4a5260';for(let k=0;k<8;k++){const b=k*Math.PI/4+.4;g.fillRect(13*Math.cos(b)-1.5,13*Math.sin(b)-1.5,3,3)}g.restore();
+  g.fillStyle='#3a1208';g.beginPath();g.arc(0,0,10,0,7);g.fill();g.strokeStyle='#8d95a1';g.lineWidth=2;g.stroke();
+  const eg=g.createRadialGradient(-2,-2,1,0,0,8);eg.addColorStop(0,'#fff1c9');eg.addColorStop(.4,'#ffb347');eg.addColorStop(1,'#c2410c');g.fillStyle=eg;g.beginPath();g.arc(0,0,7.5,0,7);g.fill();
+  const ex=Math.atan2(py-q.y,px-q.x);g.fillStyle='#2a0d03';g.beginPath();g.ellipse(2.5*Math.cos(ex),2.5*Math.sin(ex),2,4,ex,0,7);g.fill();
+  // sparks on the wall side
+  const sx=gr.v?-gr.dir*17:0,sy=gr.v?0:-gr.dir*17;g.strokeStyle='#ffd27a';g.lineWidth=1.5;for(let k=0;k<3;k++){const f=fract(t*7+k*.37),len=4+8*f;g.globalAlpha=1-f;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+(gr.v?-gr.dir*len:(k-1)*len),sy+(gr.v?(k-1)*len:-gr.dir*len));g.stroke()}g.globalAlpha=1;
+  g.restore()}
 function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
+  for(const gr of hz.grinders){const q=grinderPos(gr,clock);
+    // scorch streak along the patrol
+    g.fillStyle='rgba(255,120,40,.18)';if(gr.v)g.fillRect(gr.x-(gr.dir>0?4:0),gr.lo-16,4,gr.hi-gr.lo+32);else g.fillRect(gr.lo-16,gr.y-(gr.dir>0?4:0),gr.hi-gr.lo+32,4);
+    drawGrinder(g,q,gr,clock,t,R.p.x+11,R.p.y+13)}
   for(const s of hz.slides)drawSlide(g,s,slideX(s,clock),t);
   for(const sp of hz.spikes)drawSpikes(g,sp,t);
   for(const fh of hz.fish){const f0=((clock+fh.off)%fh.per+fh.per)%fh.per;if(f0>fh.per-24)drawBubbles(g,fh.x,fh.base,t,(f0-(fh.per-24))/24);for(let k=0;k<fh.n;k++){const q=fishPos(fh,clock,k);if(q)drawFish(g,q,t)}}
@@ -979,7 +1015,8 @@ function hzLights(R,clock,L){const hz=R.hz;
   for(const e of hz.cinders){const q=cinderPos(e,clock);if(q)L(q.x,q.y,56,.9)}
   for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const r of hz.runners)L(r.x,r.y-8,40,.9);
   for(const fh of hz.fish)for(let k=0;k<fh.n;k++){const q=fishPos(fh,clock,k);if(q)L(q.x,q.y,40,.7)}
-  for(const r of hz.ricos){const q=ricoPos(r,clock);L(q.x,q.y,60,.9)}for(const s of hz.slides)L(slideX(s,clock)+32,s.y+6,40,.4)}
+  for(const r of hz.ricos){const q=ricoPos(r,clock);L(q.x,q.y,60,.9)}for(const s of hz.slides)L(slideX(s,clock)+32,s.y+6,40,.4)
+  for(const gr of hz.grinders){const q=grinderPos(gr,clock);L(q.x,q.y,48,.7)}}
 function drawMovers(g,movers,clock,t){for(const m of movers){g.strokeStyle='#3e434c';g.lineWidth=4;g.lineCap='round';g.beginPath();g.moveTo(m.x,m.y);m.v?g.lineTo(m.x,m.y-96):g.lineTo(m.x+96,m.y);g.stroke();
   g.strokeStyle='#6b727d';g.lineWidth=1.5;g.beginPath();g.moveTo(m.x,m.y);m.v?g.lineTo(m.x,m.y-96):g.lineTo(m.x+96,m.y);g.stroke();const q=moverPos(m,clock);drawCog(g,q.x,q.y,t)}}
 /* The spark: a glowing ember with a flame tail; dims and reddens as heat runs out */
@@ -1169,7 +1206,7 @@ function makeFx(V){
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
       if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
-      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.'};
+      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>wall grinder</b>. It rolls along its wall or ceiling and back. Stay off its wall until it has passed.'};
        if(HZN[why]&&!V.replay){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
       if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
