@@ -397,7 +397,10 @@ function terrain(name,items,start=6,tight=false){PAD.g=tight?2:6;PAD.s=tight?0:3
 /* Zig-zag levels: each tier is an ordinary 15-row strip from the terrain builder. Tiers are stacked top to bottom,
    every second one mirrored so the route runs right, then left, then right. At the end of each tier the floor is cut
    away, and you drop down a shaft onto the start of the next tier. The start is on the top tier, the furnace on the bottom one. */
-function mirrorStrip(L){const g=L.grid.slice();const SW={'<':'>','>':'<'};for(let y=0;y<ROWS;y++)for(let x=0;x<L.w;x++){const c=L.grid[y*L.w+(L.w-1-x)];g[y*L.w+x]=SW[c]||c}return{name:L.name,w:L.w,grid:g}}
+function mirrorStrip(L){const g=L.grid.slice();const SW={'<':'>','>':'<'};for(let y=0;y<ROWS;y++)for(let x=0;x<L.w;x++){const c=L.grid[y*L.w+(L.w-1-x)];g[y*L.w+x]=SW[c]||c}
+  // ladles and bats patrol rightwards from their tile: after mirroring, move each one left by its span so it still covers its own pits
+  const SPAN={D:6,y:8};for(let y=0;y<ROWS;y++)for(let x=0;x<L.w;x++){const c=g[y*L.w+x];if(SPAN[c]&&x-SPAN[c]>=0&&g[y*L.w+x-SPAN[c]]==='.'){g[y*L.w+x-SPAN[c]]=c;g[y*L.w+x]='.'}}
+  return{name:L.name,w:L.w,grid:g}}
 /* Wells: what a shaft drops you into. 'ledges' is a five-wide well with one-way ledges that alternate sides, a cog on a
    rail in the middle and a grinder on each wall. 'grinder' is a four-wide well over lava, with one ledge on the left
    wall, a grinder riding that wall above it, a doorway beside the ledge down a channel to a corridor under the well, a
@@ -413,7 +416,7 @@ function stack(name,tiers,wells=[],tight=false){const strips=tiers.map((items,k)
   const off=[0];for(let k=1;k<strips.length;k++){const endPrev=k%2===1?off[k-1]+strips[k-1].w:off[k-1];off.push(k%2===1?endPrev-strips[k].w:endPrev)}
   const lo=Math.min(...off),W=Math.max(...off.map((o,k)=>o+strips[k].w))-lo;const n=strips.length;const out=Array(W*ROWS*n).fill('.');
   strips.forEach((S,k)=>{const o=off[k]-lo,first=k===0,last=k===n-1;let L={name:S.name,w:S.w,grid:S.grid.slice()};
-    for(let i=0;i<L.grid.length;i++){if(L.grid[i]==='S'&&!first)L.grid[i]='.';if(L.grid[i]==='G'&&!last)L.grid[i]='.';if(L.grid[i]==='^'&&!last)L.grid[i]='~'}
+    for(let i=0;i<L.grid.length;i++){if(L.grid[i]==='S'&&!first)L.grid[i]='.';if(L.grid[i]==='G'&&!last)L.grid[i]='.';if(L.grid[i]==='^'&&!last&&((i/S.w)|0)===ROWS-1)L.grid[i]='~'}
     if(!last&&tight)L.grid[12*S.w+S.w-4]='^';// a tooth on the lip of the drop (the last three columns are the shaft)
     if(k%2===1)L=mirrorStrip(L);
     for(let y=0;y<ROWS;y++)for(let x=0;x<S.w;x++)out[(k*ROWS+y)*W+o+x]=L.grid[y*S.w+x];
@@ -1010,8 +1013,10 @@ function drawPiston(g,pi,top){const x=pi.x,w=pi.w;
   for(let k=-1;k<w/8+1;k++){g.beginPath();g.moveTo(x+k*8,top+16);g.lineTo(x+k*8+4,top+16);g.lineTo(x+k*8+10,top+10);g.lineTo(x+k*8+6,top+10);g.closePath();g.fill()}g.restore();
   g.fillStyle='rgba(255,150,60,.85)';g.fillRect(x,top,w,2);g.fillStyle='#2b2f36';for(const rx of[x+5,x+w-7])g.fillRect(rx,top+4,2,2)}
 // plain flame ball: a round molten core with a flame tail pointing back the way it came
+const FB_GR={};// the molten core gradient, built once per direction and drawn at the origin
 function drawFireball(g,x,y,t,up){for(let k=6;k>=1;k--){const r=10-k*1.25,wob=Math.sin(t*26+k*1.7)*(1+k*.35);g.fillStyle=k>3?'rgba(255,80,20,'+(.5-k*.06)+')':'rgba(255,190,80,'+(.75-k*.12)+')';g.beginPath();g.arc(x+wob,y+up*k*4.6,Math.max(2,r),0,7);g.fill()}
-  const gr=g.createRadialGradient(x-2,y-2*up,1,x,y,11);gr.addColorStop(0,'#ffffff');gr.addColorStop(.3,'#fff1c9');gr.addColorStop(.6,'#ffb347');gr.addColorStop(1,'#ff5a1a');g.fillStyle=gr;g.beginPath();g.arc(x,y,9.5,0,7);g.fill();
+  let gr=FB_GR[up];if(!gr){gr=g.createRadialGradient(-2,-2*up,1,0,0,11);gr.addColorStop(0,'#ffffff');gr.addColorStop(.3,'#fff1c9');gr.addColorStop(.6,'#ffb347');gr.addColorStop(1,'#ff5a1a');FB_GR[up]=gr}
+  g.save();g.translate(x,y);g.fillStyle=gr;g.beginPath();g.arc(0,0,9.5,0,7);g.fill();g.restore();
   g.strokeStyle='rgba(255,240,200,.7)';g.lineWidth=1.2;g.beginPath();g.arc(x,y,6+Math.sin(t*30)*.8,t*8,t*8+2.2);g.stroke()}
 // Forge bat: an iron-plated bat with bellows for wings; the folds glow orange when it pumps them. Red eyes. Wings spread wide and it screeches before a drop.
 function drawBat(g,x,y,t,warn,px){const flap=warn>0?.15:Math.sin(t*14)*.55,face=px<x?-1:1;g.save();g.translate(x,y);
@@ -1052,7 +1057,7 @@ function drawGrinder(g,q,gr,clock,t,px,py){const a=clock*.12*gr.dir;g.save();g.t
   g.fillStyle='#a9b0bb';g.strokeStyle='#4a5260';g.lineWidth=1;for(let k=0;k<8;k++){const b=k*Math.PI/4;g.beginPath();g.moveTo(17*Math.cos(b),17*Math.sin(b));g.lineTo(24*Math.cos(b+.3),24*Math.sin(b+.3));g.lineTo(17*Math.cos(b+.55),17*Math.sin(b+.55));g.closePath();g.fill();g.stroke()}
   g.fillStyle='#4a5260';for(let k=0;k<8;k++){const b=k*Math.PI/4+.4;g.fillRect(13*Math.cos(b)-1.5,13*Math.sin(b)-1.5,3,3)}g.restore();
   g.fillStyle='#3a1208';g.beginPath();g.arc(0,0,10,0,7);g.fill();g.strokeStyle='#8d95a1';g.lineWidth=2;g.stroke();
-  const eg=g.createRadialGradient(-2,-2,1,0,0,8);eg.addColorStop(0,'#fff1c9');eg.addColorStop(.4,'#ffb347');eg.addColorStop(1,'#c2410c');g.fillStyle=eg;g.beginPath();g.arc(0,0,7.5,0,7);g.fill();
+  if(!drawGrinder.eg){const eg=g.createRadialGradient(-2,-2,1,0,0,8);eg.addColorStop(0,'#fff1c9');eg.addColorStop(.4,'#ffb347');eg.addColorStop(1,'#c2410c');drawGrinder.eg=eg}g.fillStyle=drawGrinder.eg;g.beginPath();g.arc(0,0,7.5,0,7);g.fill();
   const ex=Math.atan2(py-q.y,px-q.x);g.fillStyle='#2a0d03';g.beginPath();g.ellipse(2.5*Math.cos(ex),2.5*Math.sin(ex),2,4,ex,0,7);g.fill();
   // sparks on the wall side
   const nx=q.nx,ny=q.ny,sx=nx*17,sy=ny*17;g.strokeStyle='#ffd27a';g.lineWidth=1.5;for(let k=0;k<3;k++){const f=fract(t*7+k*.37),len=4+8*f;g.globalAlpha=1-f;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+nx*len+ny*(k-1)*len,sy+ny*len+nx*(k-1)*len);g.stroke()}g.globalAlpha=1;
@@ -1070,7 +1075,7 @@ function drawGuard(g,q,t){g.save();g.translate(q.x,q.y);const f=q.face;g.scale(f
   // shield arm: angle by state
   let a=0;if(q.st===1)a=-1.2*(1-q.t/18);else if(q.st===2)a=-1.2+2.4*(1-q.t/14);else if(q.st===3)a=1.2*(q.t/45);
   g.save();g.translate(4,-22);g.rotate(a);g.strokeStyle='#d9d2c4';g.lineWidth=3;g.beginPath();g.moveTo(0,0);g.lineTo(14,4);g.stroke();
-  g.translate(16,4);const sg=g.createRadialGradient(-3,-3,2,0,0,13);sg.addColorStop(0,'#8d95a1');sg.addColorStop(1,'#3a3e46');g.fillStyle=sg;g.beginPath();g.arc(0,0,13,0,7);g.fill();g.strokeStyle='#c2410c';g.lineWidth=2;g.stroke();g.fillStyle='#ffb347';g.beginPath();g.arc(0,0,3,0,7);g.fill();
+  g.translate(16,4);if(!drawGuard.sg){const sg=g.createRadialGradient(-3,-3,2,0,0,13);sg.addColorStop(0,'#8d95a1');sg.addColorStop(1,'#3a3e46');drawGuard.sg=sg}g.fillStyle=drawGuard.sg;g.beginPath();g.arc(0,0,13,0,7);g.fill();g.strokeStyle='#c2410c';g.lineWidth=2;g.stroke();g.fillStyle='#ffb347';g.beginPath();g.arc(0,0,3,0,7);g.fill();
   if(q.st===2){g.strokeStyle='rgba(255,210,122,.7)';g.lineWidth=3;g.beginPath();g.arc(0,0,20,-.6,.6);g.stroke()}g.restore();
   g.restore()}
 function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
@@ -1088,7 +1093,7 @@ function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
   for(const pi of hz.pistons)drawPiston(g,pi,pistonTop(pi,clock));
   for(const d of hz.ladles)drawLadle(g,d,clock,t);
   for(const h of hz.hooks)drawHook(g,h,t);
-  for(const e of hz.cinders){const f=(clock+e.ph)%e.per;if(f>e.per-30)drawBubbles(g,e.x,e.base,t,(f-(e.per-30))/30);const q=cinderPos(e,clock);if(q){if(e.ball)drawFireball(g,q.x,q.y,t,q.f<34?1:-1);else drawChomper(g,q.x,q.y,t,q.f<34?1:-1,R.p.x+11,R.p.y+13)}}
+  for(const e of hz.cinders){const f=(clock+e.ph)%e.per;if(f>e.per-30)drawBubbles(g,e.x,e.base,t,(f-(e.per-30))/30);const q=cinderPos(e,clock);if(q){if(e.ball)drawFireball(g,q.x,q.y,t,q.f*(e.spd||1)<34?1:-1);else drawChomper(g,q.x,q.y,t,q.f<34?1:-1,R.p.x+11,R.p.y+13)}}
   for(const j of hz.jets){const s=jetHeat(j,clock);drawJet(g,j,s[0],s[1],t)}
   for(const d of hz.drops)drawDrop(g,d);for(const d of hz.drops)if(d.k==='bomb'){g.fillStyle='#1c1f25';g.beginPath();g.arc(d.x,d.y,8,0,7);g.fill();g.strokeStyle='#ffb347';g.lineWidth=1.5;g.beginPath();g.moveTo(d.x-6,d.y-2);g.lineTo(d.x-1,d.y+1);g.lineTo(d.x+2,d.y-4);g.moveTo(d.x,d.y+2);g.lineTo(d.x+5,d.y+4);g.stroke();g.fillStyle='rgba(255,120,40,.5)';g.beginPath();g.arc(d.x,d.y,10,0,7);g.fill()}
   for(const w of hz.crows){const q=crowPos(w,clock);const warm=w.hunt?(w.warn>0?1:0):Math.max(0,((clock+w.off)%w.every-(w.every-16))/16);
@@ -1329,8 +1334,8 @@ addEventListener('keyup',e=>{const k=e.key;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
 addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.tv=0;padPtrs.clear();gLeft=0;stickHide()});
 const pad=$('#pad'),padPtrs=new Map();const DEAD=8,LEASH=30,RAMP=20;
-// Re-grip grace: lifting the move thumb for a moment (to shift it mid-jump) keeps Ember moving the same way for
-// GRACE frames, and a thumb that comes back down inside that window carries on in that direction straight away.
+// Re-grip grace: lifting the move thumb for a moment mid-jump keeps Ember moving the same way for GRACE frames while
+// airborne. A thumb that comes back down stands still until it slides (no carried direction).
 const GRACE=12;let gDir=0,gLeft=0;
 function padDir(q){const dx=q.x-q.ax;return dx>DEAD?1:dx<-DEAD?-1:0}
 // app-space coordinates of a pointer (the app is rotated 90 degrees in sideways mode)
@@ -1354,7 +1359,7 @@ jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCaptur
 function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;input.tv=0;jb.classList.remove('on');stickHide();
   if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
 function over(el,t,m){const r=el.getBoundingClientRect();return t.clientX>=r.left-m&&t.clientX<=r.right+m&&t.clientY>=r.top-m&&t.clientY<=r.bottom+m}
-function reconcile(e){const ts=[...e.touches];if(padPtrs.size>0&&!ts.some(t=>over(pad,t,48))){let last=null;for(const q of padPtrs.values())last=q;startGrace(padDir(last));padPtrs.clear();padUpdate();stickHide();
+function reconcile(e){const ts=[...e.touches];if(padPtrs.size>0&&!ts.some(t=>over(pad,t,160))){let last=null;for(const q of padPtrs.values())last=q;startGrace(padDir(last));padPtrs.clear();padUpdate();stickHide();
     if(screen==='play'&&V&&!V.replay)LOG.add('input',{fix:'pad',lv:LEVELS[V.idx].code,clk:V.R.clock})}
   if(input.tj&&!ts.some(t=>over(jb,t,24))){input.tj=false;jb.classList.remove('on')}}
 for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0){if(padPtrs.size>0||input.tj)releaseTouch(ev)}else reconcile(e)},{passive:true,capture:true});
