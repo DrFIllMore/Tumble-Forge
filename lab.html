@@ -108,6 +108,12 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 
 /* ---------- Touch controls ---------- */
 #controls{position:absolute;inset:0;pointer-events:none}
+/* the joystick drawn under the move thumb: a ring at the anchor, a knob at the thumb; the ring slides with the thumb past the leash */
+#stick{position:absolute;left:0;top:0;pointer-events:none;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:2px solid rgba(255,193,94,.5);background:rgba(20,13,10,.38);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);opacity:0;transition:opacity .18s;will-change:transform}
+#stick.on{opacity:1;transition:opacity .05s}
+#stick b{position:absolute;top:50%;transform:translateY(-54%);font:700 26px/1 var(--body,sans-serif);color:rgba(255,193,94,.55)}#stick b:first-child{left:-20px}#stick b:nth-child(2){right:-20px}
+#stick.l b:first-child,#stick.r b:nth-child(2){color:#ffe2a0}
+#stick i{position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe2a0,#ff8a3a 70%,#c2410c);box-shadow:0 0 14px rgba(255,160,60,.6)}
 #pad{position:absolute;pointer-events:auto;left:0;top:calc(calc(var(--st,env(safe-area-inset-top,0px)) + var(--et,0px)) + 56px);bottom:0;width:50%;touch-action:none}
 #jumpBtn{position:absolute;pointer-events:auto;right:calc(calc(var(--sr,env(safe-area-inset-right,0px)) + var(--ex,0px)) + 18px);bottom:calc(var(--sb,env(safe-area-inset-bottom,0px)) + 14px);width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,193,94,.55),rgba(255,106,26,.45));border:3px solid var(--molten);font-family:var(--f-display);font-size:20px;color:var(--ash);touch-action:none;text-shadow:0 2px 0 rgba(0,0,0,.45);letter-spacing:.04em}
 #jumpBtn.on{background:radial-gradient(circle at 50% 40%,rgba(255,226,160,.9),rgba(255,106,26,.85));transform:scale(.95)}
@@ -237,6 +243,7 @@ html.rot #rotate{display:none!important}
   <div id="controls" hidden>
     <div id="pad" aria-label="Move: touch and slide left or right"></div>
     <button id="jumpBtn" aria-label="Jump">JUMP</button>
+    <div id="stick" aria-hidden="true"><b>&lsaquo;</b><b>&rsaquo;</b><i></i></div>
   </div>
 
   <div id="intro"><canvas id="introCvs"></canvas><p id="introTap">Tap to light the forge</p><p id="introSkip">Tap to skip</p></div>
@@ -1264,28 +1271,37 @@ addEventListener('keydown',e=>{ensureAudio();const k=e.key;
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='ArrowLeft'||k==='a'||k==='A')input.kl=false;if(k==='ArrowRight'||k==='d'||k==='D')input.kr=false;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
-addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.tv=0;padPtrs.clear();gLeft=0});
+addEventListener('blur',()=>{input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.tv=0;padPtrs.clear();gLeft=0;stickHide()});
 const pad=$('#pad'),padPtrs=new Map();const DEAD=8,LEASH=30,RAMP=20;
 // Re-grip grace: lifting the move thumb for a moment (to shift it mid-jump) keeps Ember moving the same way for
 // GRACE frames, and a thumb that comes back down inside that window carries on in that direction straight away.
 const GRACE=12;let gDir=0,gLeft=0;
 function padDir(q){const dx=q.x-q.ax;return dx>DEAD?1:dx<-DEAD?-1:0}
+// app-space coordinates of a pointer (the app is rotated 90 degrees in sideways mode)
+function appXY(e){return SIDE.on?[e.clientY,window.innerWidth-e.clientX]:[e.clientX,e.clientY]}
+const stick=$('#stick'),knob=stick.querySelector('i');
+function stickShow(q){const dx=Math.max(-LEASH,Math.min(LEASH,q.x-q.ax)),d=padDir(q);stick.style.transform=`translate(${q.ax}px,${q.ay}px)`;knob.style.transform=`translate(${dx}px,0)`;stick.classList.toggle('l',d<0);stick.classList.toggle('r',d>0);stick.classList.add('on')}
+function stickHide(){stick.classList.remove('on','l','r')}
 function startGrace(dir){if(dir){gDir=dir;gLeft=GRACE}}
 // Analog: just past the dead zone Ember walks slowly (35% speed), and reaches full speed when the thumb is DEAD+RAMP px out.
 function padUpdate(){let d=0,v=0,last=null;for(const q of padPtrs.values())last=q;if(last){const dx=last.x-last.ax,ad=Math.abs(dx);if(ad>DEAD){d=Math.sign(dx);v=d*(.35+.65*Math.min(1,(ad-DEAD)/RAMP))}}input.tl=d<0;input.tr=d>0;input.tv=v}
 pad.addEventListener('pointerdown',e=>{e.preventDefault();try{pad.setPointerCapture(e.pointerId)}catch(_){}padPtrs.delete(e.pointerId);
-  const carry=gLeft>0&&padPtrs.size===0?gDir:0;padPtrs.set(e.pointerId,{ax:px(e)-carry*(DEAD+1),x:px(e)});gLeft=0;padUpdate()});
-pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=px(e);const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;padUpdate()});
-['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,e=>{const q=padPtrs.get(e.pointerId);if(!q)return;padPtrs.delete(e.pointerId);if(padPtrs.size===0)startGrace(padDir(q));padUpdate()}));
+  const[,ay]=appXY(e);const q={ax:px(e),x:px(e),ay};padPtrs.set(e.pointerId,q);gLeft=0;padUpdate();stickShow(q)});
+pad.addEventListener('pointermove',e=>{const q=padPtrs.get(e.pointerId);if(!q)return;q.x=px(e);const dx=q.x-q.ax;if(dx>LEASH)q.ax=q.x-LEASH;else if(dx<-LEASH)q.ax=q.x+LEASH;q.ay=appXY(e)[1];padUpdate();stickShow(q)});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,e=>{const q=padPtrs.get(e.pointerId);if(!q)return;padPtrs.delete(e.pointerId);if(padPtrs.size===0){startGrace(padDir(q));stickHide()}padUpdate()}));
 const jb=$('#jumpBtn');
 jb.addEventListener('pointerdown',e=>{e.preventDefault();try{jb.setPointerCapture(e.pointerId)}catch(_){}input.tj=true;input.pressed=true;jb.classList.add('on')});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>jb.addEventListener(ev,()=>{input.tj=false;jb.classList.remove('on')}));
 // Safety net for a finger the browser forgets: iOS can swallow the "finger lifted" event (a system swipe, the app's own
 // gesture, a call banner), which used to leave Ember running on his own. When no finger is on the screen at all,
 // every touch control is released, and the log notes it so a stuck input shows up there.
-function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;input.tv=0;jb.classList.remove('on');
+function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();input.tl=input.tr=input.tj=false;input.tv=0;jb.classList.remove('on');stickHide();
   if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
-for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0&&(padPtrs.size>0||input.tj))releaseTouch(ev)},{passive:true,capture:true});
+function over(el,t,m){const r=el.getBoundingClientRect();return t.clientX>=r.left-m&&t.clientX<=r.right+m&&t.clientY>=r.top-m&&t.clientY<=r.bottom+m}
+function reconcile(e){const ts=[...e.touches];if(padPtrs.size>0&&!ts.some(t=>over(pad,t,48))){let last=null;for(const q of padPtrs.values())last=q;startGrace(padDir(last));padPtrs.clear();padUpdate();stickHide();
+    if(screen==='play'&&V&&!V.replay)LOG.add('input',{fix:'pad',lv:LEVELS[V.idx].code,clk:V.R.clock})}
+  if(input.tj&&!ts.some(t=>over(jb,t,24))){input.tj=false;jb.classList.remove('on')}}
+for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0){if(padPtrs.size>0||input.tj)releaseTouch(ev)}else reconcile(e)},{passive:true,capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch('hidden')});
 addEventListener('pagehide',()=>releaseTouch('pagehide'));
 
@@ -1606,7 +1622,7 @@ if(cleared.w1a&&cleared.w1b)cleared.w1ab=true;if(cleared.w1c&&cleared.w1d)cleare
 const unlocked=i=>true||i===0||!!cleared[LEVELS[i].id]||!!cleared[LEVELS[i-1].id];
 function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden=s!=='menu';$('#hud').hidden=s!=='play';$('#controls').hidden=!(s==='play'&&isTouch&&V&&!V.replay);
   if(s!=='play')$('#hint').hidden=true;
-  input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();gLeft=0;padUpdate();if(s==='menu')renderMenu()}
+  input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();gLeft=0;padUpdate();stickHide();if(s==='menu')renderMenu()}
 function startLevel(i,replay){menuWorld=null;closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(L.world+1);Music.duck(false);
   V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0,y:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
   V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});
