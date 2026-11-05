@@ -351,7 +351,7 @@ Object.assign(SEC,{
   grindPillars:(L,x,coal)=>{pit(L,x,x+16);for(const[d,top]of[[2,11],[5,12],[8,11],[11,12],[14,11]])F(L,x+d,x+d,top,13,'B');
     P(L,x+3,12,'u');P(L,x+6,12,'u');P(L,x+9,12,'u');P(L,x+12,12,'u');P(L,x+6,14,'F');P(L,x+12,14,'L');P(L,x,6,'k');if(coal)P(L,x+8,8,'*');return x+17},
   // Area 1 footwork: short pieces that replace plain floor
-  steps:(L,x,coal)=>{G(L,x,11);P(L,x+2,12,'#');F(L,x+7,x+8,12,12,'#');P(L,x+3,12,'O');if(coal)P(L,x+5,9,'*');return x+11},// a cog sweeps the floor between the block and the two-block
+  steps:(L,x,coal)=>{G(L,x,10);pit(L,x+1,x+2);F(L,x+3,x+3,12,14,'#');pit(L,x+4,x+5);F(L,x+6,x+7,12,14,'#');P(L,x+4,14,'F');P(L,x+5,14,'f');if(coal)P(L,x+4,9,'*');return x+10},// stepping stones over lava: an empty gap, then a gap with two flame balls at different speeds
   hop2:(L,x,coal)=>{G(L,x,1);pit(L,x+1,x+1);G(L,x+2,2);pit(L,x+4,x+4);G(L,x+5,2);if(coal)P(L,x+3,11,'*');return x+7},
   lowRoof:(L,x,coal)=>{G(L,x,9);F(L,x+1,x+7,9,9,'v');pit(L,x+3,x+4);P(L,x+3,14,'F');P(L,x+4,14,'f');if(coal)P(L,x+7,11,'*');return x+9},// two flame balls at different speeds in the pocket under the roof
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
