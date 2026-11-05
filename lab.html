@@ -270,7 +270,7 @@ const GATE={
   E2:(L,s)=>{pit(L,s,s+2);P(L,s+3,12,'^');return[s+3,s+3]},
   M1:(L,s)=>{pit(L,s,s+4);return[s+5,0]},
   M1c:(L,s)=>{pit(L,s,s+4);P(L,s+2,12,'C');P(L,s+2,9,'*');return[s+5,0]},// the long gap with a crumbling brick in the middle and the coal above it: hop on, jump for the coal, go
-  E1f:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'v');P(L,s,14,'F');P(L,s+2,14,'L');return[s+3,s+11]},// the spike-roof gap with two flame balls in it
+  E1f:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'v');P(L,s,14,'g');P(L,s+2,14,'h');return[s+3,s+11]},// the spike-roof gap with two flame balls in it
   M2d:(L,s)=>{G(L,s,5);P(L,s,12,'X');P(L,s+4,12,'X');F(L,s-5,s+11,10,10,'v');return[s+5,s+11]},// two cogs on the floor under the spike bar: two jumps
   M2:(L,s)=>{G(L,s,1);P(L,s,12,'X');F(L,s-5,s+7,10,10,'v');return[s+1,s+7]},
   M3:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'X');return[s+3,s+11]},
@@ -354,12 +354,12 @@ Object.assign(SEC,{
   grindPillars:(L,x,coal)=>{pit(L,x,x+16);for(const[d,top]of[[2,11],[5,12],[8,11],[11,12],[14,11]])F(L,x+d,x+d,top,13,'B');
     P(L,x+3,12,'u');P(L,x+6,12,'u');P(L,x+9,12,'u');P(L,x+12,12,'u');P(L,x+6,14,'F');P(L,x+12,14,'L');P(L,x,6,'k');if(coal)P(L,x+8,8,'*');return x+17},
   // Area 1 footwork: short pieces that replace plain floor
-  steps:(L,x,coal)=>{G(L,x,10);pit(L,x+1,x+2);F(L,x+3,x+3,12,14,'#');pit(L,x+4,x+5);F(L,x+6,x+7,12,14,'#');P(L,x+1,14,'L');P(L,x+2,14,'f');P(L,x+4,14,'F');P(L,x+5,14,'f');if(coal)P(L,x+4,9,'*');return x+10},// stepping stones over lava, two flame balls at different speeds in each gap
+  steps:(L,x,coal)=>{G(L,x,10);pit(L,x+1,x+2);F(L,x+3,x+3,12,14,'#');pit(L,x+4,x+5);F(L,x+6,x+7,12,14,'#');P(L,x+1,14,'g');P(L,x+2,14,'f');P(L,x+4,14,'g');P(L,x+5,14,'h');if(coal)P(L,x+4,9,'*');return x+10},// stepping stones over lava: first gap a fast and a slow ball together, second gap a staggered pair
   hop2:(L,x,coal)=>{G(L,x,1);pit(L,x+1,x+1);G(L,x+2,2);pit(L,x+4,x+4);G(L,x+5,2);if(coal)P(L,x+3,11,'*');return x+7},
-  fire2:(L,x,coal)=>{pit(L,x,x+1);P(L,x,14,'F');P(L,x+1,14,'f');if(coal)P(L,x+1,9,'*');return x+2},// a two-tile gap with two flame balls at different speeds
-  crumblesF:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');for(const d of[3,6,9])P(L,x+d,14,'F');P(L,x+6,10,'*');return x+13},// crumbling bricks with a flare leaping in each gap between them
+  fire2:(L,x,coal)=>{pit(L,x,x+1);P(L,x,14,'g');P(L,x+1,14,'f');if(coal)P(L,x+1,9,'*');return x+2},// a two-tile gap with two flame balls at different speeds
+  crumblesF:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');for(const d of[3,6,9])P(L,x+d,14,'g');P(L,x+6,10,'*');return x+13},// crumbling bricks with a flare leaping in each gap between them, all on the beat: a volley, then run
   crumble2:(L,x)=>{pit(L,x,x+8);P(L,x+2,12,'C');P(L,x+5,12,'C');return x+9},// two crumbling bricks over a pit, nothing else
-  lowRoof:(L,x,coal)=>{G(L,x,9);F(L,x+1,x+7,9,9,'v');pit(L,x+3,x+4);P(L,x+3,14,'F');P(L,x+4,14,'f');if(coal)P(L,x+7,11,'*');return x+9},// two flame balls at different speeds in the pocket under the roof
+  lowRoof:(L,x,coal)=>{G(L,x,9);F(L,x+1,x+7,9,9,'v');pit(L,x+3,x+4);P(L,x+3,14,'g');P(L,x+4,14,'f');if(coal)P(L,x+7,11,'*');return x+9},// two flame balls at different speeds in the pocket under the roof
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
 });
 
@@ -558,8 +558,8 @@ function step(R,inp){
  k      the same drone red-hot: faster, lower, drops two cinders, reloads in half the time
  u      wrap grinder: circles the pillar beside it, over the top and back underneath
  E      leaping cinder: jumps out of the lava on a rhythm
- F/L    flame ball (two phases); f a slow one at seven tenths of the speed */
-const HZ_CH='JKW<>DNAHEFLPyZRVowkuf';
+ F/L    flame ball (two phases, by column); g/h synced balls (on the beat, 40 frames after it); f a slow synced one */
+const HZ_CH='JKW<>DNAHEFLPyZRVowkufgh';
 const hzh=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000;
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
 function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[]};let any=false;
@@ -572,7 +572,8 @@ function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drop
     else if(ch==='A'){hz.crows.push({hunt:false,x0:X+16,y0:Y+16,span:8*TS,per:300,every:64,off:(tx*13)%64});R.grid[i]='.'}
     else if(ch==='H'||ch==='k'){hz.crows.push({hunt:true,hot:ch==='k',x:X+16,y:Y+16,hx:X+16,hy:Y+16,vx:0,cd:40,warn:0,again:0,lo:X-10*TS,hi:X+40*TS,top:Math.floor(ty/ROWS)*ROWS*TS});R.grid[i]='.'}
     else if(ch==='F'||ch==='L'){hz.cinders.push({x:X+16,base:Y+12,ph:((tx*37)+(ch==='L'?75:0))%150,per:150,ball:true});R.grid[i]=ty===R.rows-1?'^':'~'}
-    else if(ch==='f'){hz.cinders.push({x:X+16,base:Y+12,ph:(tx*37)%210,per:210,ball:true,spd:.7});R.grid[i]=ty===R.rows-1?'^':'~'}
+    // synced flame balls (phase fixed, not by column): g fires on the beat, h two thirds of a second after it, f is a slow one that fires with g and lingers
+    else if(ch==='g'||ch==='h'||ch==='f'){hz.cinders.push({x:X+16,base:Y+12,ph:ch==='h'?110:0,per:150,ball:true,spd:ch==='f'?.7:1});R.grid[i]=ty===R.rows-1?'^':'~'}
     else if(ch==='P'){const last=hz.pistons[hz.pistons.length-1];if(last&&last.row===ty&&last.x+last.w===X)last.w+=TS;else hz.pistons.push({x:X,w:TS,row:ty,lo:(ty+1)*TS,hi:(ty-3)*TS,per:180,ph:(hz.pistons.length*60)%180});R.grid[i]='.'}
     else if(ch==='E'){hz.cinders.push({x:X+16,base:Y+12,ph:(tx*37)%150,per:150});R.grid[i]=ty===R.rows-1?'^':'~'}
     else if(ch==='y'){hz.bats.push({x0:X+16,y0:Y+16,span:8*TS,per:260,off:(tx*17)%260,cd:0,warn:0});R.grid[i]='.'}
