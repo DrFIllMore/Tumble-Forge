@@ -271,6 +271,7 @@ const GATE={
   M1:(L,s)=>{pit(L,s,s+4);return[s+5,0]},
   M1c:(L,s)=>{pit(L,s,s+4);P(L,s+2,12,'C');P(L,s+2,9,'*');return[s+5,0]},// the long gap with a crumbling brick in the middle and the coal above it: hop on, jump for the coal, go
   E1f:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'v');P(L,s,14,'F');P(L,s+2,14,'L');return[s+3,s+11]},// the spike-roof gap with two flame balls in it
+  M2d:(L,s)=>{G(L,s,5);P(L,s,12,'X');P(L,s+4,12,'X');F(L,s-5,s+11,10,10,'v');return[s+5,s+11]},// two cogs on the floor under the spike bar: two jumps
   M2:(L,s)=>{G(L,s,1);P(L,s,12,'X');F(L,s-5,s+7,10,10,'v');return[s+1,s+7]},
   M3:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'X');return[s+3,s+11]},
   H:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');return[s+3,0]},
@@ -355,6 +356,9 @@ Object.assign(SEC,{
   // Area 1 footwork: short pieces that replace plain floor
   steps:(L,x,coal)=>{G(L,x,10);pit(L,x+1,x+2);F(L,x+3,x+3,12,14,'#');pit(L,x+4,x+5);F(L,x+6,x+7,12,14,'#');P(L,x+1,14,'L');P(L,x+2,14,'f');P(L,x+4,14,'F');P(L,x+5,14,'f');if(coal)P(L,x+4,9,'*');return x+10},// stepping stones over lava, two flame balls at different speeds in each gap
   hop2:(L,x,coal)=>{G(L,x,1);pit(L,x+1,x+1);G(L,x+2,2);pit(L,x+4,x+4);G(L,x+5,2);if(coal)P(L,x+3,11,'*');return x+7},
+  fire2:(L,x,coal)=>{pit(L,x,x+1);P(L,x,14,'F');P(L,x+1,14,'f');if(coal)P(L,x+1,9,'*');return x+2},// a two-tile gap with two flame balls at different speeds
+  crumblesF:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');for(const d of[3,6,9])P(L,x+d,14,'F');P(L,x+6,10,'*');return x+13},// crumbling bricks with a flare leaping in each gap between them
+  crumble2:(L,x)=>{pit(L,x,x+8);P(L,x+2,12,'C');P(L,x+5,12,'C');return x+9},// two crumbling bricks over a pit, nothing else
   lowRoof:(L,x,coal)=>{G(L,x,9);F(L,x+1,x+7,9,9,'v');pit(L,x+3,x+4);P(L,x+3,14,'F');P(L,x+4,14,'f');if(coal)P(L,x+7,11,'*');return x+9},// two flame balls at different speeds in the pocket under the roof
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
 });
