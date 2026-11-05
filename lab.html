@@ -278,9 +278,11 @@ const GATE={
   Y:(L,s)=>{G(L,s,3);F(L,s,s+2,12,12,'X');F(L,s-6,s+6,8,8,'v');P(L,s-1,10,'X');return[s+3,s+10]},
   Z:(L,s)=>{pit(L,s,s+3);F(L,s-5,s+13,10,10,'X');return[s+4,s+13]},
 };
-function gate(L,x,k,coal){G(L,x,6);const s=x+6;const[e,ce]=GATE[k](L,s);if(coal)P(L,s+Math.floor((e-s-1)/2),k==='H'?9:11,'*');return G(L,e,Math.max(6,ce-e+2))}
+// padding round pieces: PAD.g tiles of runway before and after a gate, PAD.s of floor before a section (a tight level halves these)
+const PAD={g:6,s:3};
+function gate(L,x,k,coal){G(L,x,PAD.g);const s=x+PAD.g;const[e,ce]=GATE[k](L,s);if(coal)P(L,s+Math.floor((e-s-1)/2),k==='H'?9:11,'*');return G(L,e,Math.max(PAD.g,ce-e+2))}
 const SEC={
-  '!':(L,x)=>{G(L,x,5);P(L,x+2,12,'!');return x+5},
+  '!':(L,x)=>{const w=PAD.s<3?3:5;G(L,x,w);P(L,x+(w>>1),12,'!');return x+w},
   '!-':(L,x)=>{G(L,x,5);return x+5},
   crumbles:(L,x)=>{pit(L,x,x+12);for(const d of[2,5,8,11])P(L,x+d,12,'C');P(L,x+6,10,'*');return x+13},
   springs:(L,x)=>{pit(L,x,x+19);for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,6,'*');return x+20},
@@ -320,7 +322,7 @@ const SEC={
   singles:(L,x)=>{pit(L,x,x+30);F(L,x,x+30,4,4,'v');for(const d of[2,8,14]){P(L,x+d,12,'@');F(L,x+d,x+d,13,14,'B')}P(L,x+11,8,'Q');F(L,x+19,x+22,8,8,'B');P(L,x+25,8,'U');P(L,x+28,8,'T');return x+31},
 };
 function course(name,items){const L=blank(name,900);let x=G(L,0,6);P(L,2,12,'S');
-  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!'&&prev!=='!-')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,3);x=SEC[it](L,x,coal)}prev=it}
+  let prev='!';for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;if(GATE[it]){if(!GATE[prev]&&prev!=='!'&&prev!=='!-')x=G(L,x,7);x=gate(L,x,it,coal)}else{x=G(L,x,PAD.s);x=SEC[it](L,x,coal)}prev=it}
   x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
   const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
 // Hazard sections. Tiles: J/K beat jet (opposite beats), W trap jet, < side jet, D ladle, N hanging anvil, E fire-biter, A slag balloon, H hunter drone
@@ -348,6 +350,10 @@ Object.assign(SEC,{
   // World 2 finale for 2-3: five one-tile pillars in lava, two-tile gaps, a grinder circling each of the first four, flame balls in the jump-up gaps, the red-hot drone overhead
   grindPillars:(L,x,coal)=>{pit(L,x,x+16);for(const[d,top]of[[2,11],[5,12],[8,11],[11,12],[14,11]])F(L,x+d,x+d,top,13,'B');
     P(L,x+3,12,'u');P(L,x+6,12,'u');P(L,x+9,12,'u');P(L,x+12,12,'u');P(L,x+6,14,'F');P(L,x+12,14,'L');P(L,x,6,'k');if(coal)P(L,x+8,8,'*');return x+17},
+  // Area 1 footwork: short pieces that replace plain floor
+  steps:(L,x,coal)=>{G(L,x,9);P(L,x+2,12,'#');P(L,x+5,12,'#');P(L,x+6,12,'#');if(coal)P(L,x+5,10,'*');return x+9},
+  hop2:(L,x,coal)=>{G(L,x,1);pit(L,x+1,x+1);G(L,x+2,2);pit(L,x+4,x+4);G(L,x+5,2);if(coal)P(L,x+3,11,'*');return x+7},
+  lowRoof:(L,x,coal)=>{G(L,x,8);F(L,x+1,x+6,9,9,'v');pit(L,x+3,x+3);if(coal)P(L,x+6,11,'*');return x+8},
   huntRun:(L,x,coal)=>{G(L,x,30);pit(L,x+6,x+8);pit(L,x+14,x+16);pit(L,x+22,x+24);P(L,x+1,7,'H');if(coal)P(L,x+19,11,'*');return x+30},
 });
 
@@ -362,11 +368,11 @@ function lift(L,X,S,k){const T=S.T;for(let c=0;c<S.w;c++){for(let y=0;y<ROWS;y++
     if(k>0){const bot=T.grid[(ROWS-1)*T.w+c];if(bot==='^')L.grid[(ROWS-1-k)*L.w+X+c]='~';if(bot!=='.')for(let y=ROWS-k;y<ROWS;y++)L.grid[y*L.w+X+c]=bot==='B'?'B':'#'}}return X+S.w}
 function joinTo(L,x,fa,fb){const col=(x,f)=>F(L,x,x+1,f,ROWS-1,'#');col(x,fa);x+=2;
   if(fb<fa){let f=fa;while(f-2>fb){f-=2;col(x,f);x+=2}col(x,fb);x+=2}else if(fb>fa){col(x,fb);x+=2}return x}
-function terrain(name,items,start=6){const L=blank(name,1600);let x=G(L,0,start);P(L,2,12,'S');let f=13;const rnd=seeded(name);
+function terrain(name,items,start=6,tight=false){PAD.g=tight?2:6;PAD.s=tight?0:3;const L=blank(name,1600);let x=G(L,0,start);P(L,2,12,'S');let f=13;const rnd=seeded(name);
   for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;const S=piece(it,coal);const maxK=Math.max(0,Math.min(8,S.r0-1));
     const k=13-f;let nk=0;if(maxK>0){const steps=[-4,-3,-2,2,3,4];for(let t=0;t<16;t++){nk=k+steps[Math.floor(rnd()*steps.length)];if(nk>=0&&nk<=maxK)break;nk=-1}if(nk<0)nk=Math.min(maxK,k)}
     const nf=13-nk;x=joinTo(L,x,f,nf);x=lift(L,x,S,nk);f=nf}
-  x=joinTo(L,x,f,13);x=G(L,x,4);P(L,x+3,12,'G');x=G(L,x,7);
+  x=joinTo(L,x,f,13);x=G(L,x,tight?3:4);P(L,x+(tight?2:3),12,'G');x=G(L,x,tight?4:7);PAD.g=6;PAD.s=3;
   const g=[];for(let y=0;y<ROWS;y++)for(let i=0;i<x;i++)g.push(L.grid[y*L.w+i]);return{name,w:x,grid:g}}
 
 /* Zig-zag levels: each tier is an ordinary 15-row strip from the terrain builder. Tiers are stacked top to bottom,
