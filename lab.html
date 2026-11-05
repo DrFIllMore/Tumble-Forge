@@ -360,6 +360,10 @@ Object.assign(SEC,{
   steps:(L,x,coal)=>{G(L,x,10);pit(L,x+1,x+2);F(L,x+3,x+3,12,14,'#');pit(L,x+4,x+5);F(L,x+6,x+7,12,14,'#');P(L,x+1,14,'1');P(L,x+2,14,'2');P(L,x+4,14,'3');P(L,x+5,14,'4');if(coal)P(L,x+4,9,'*');return x+10},// stepping stones over lava: the four balls take turns, never two at once
   hop2:(L,x,coal)=>{G(L,x,1);pit(L,x+1,x+1);G(L,x+2,2);pit(L,x+4,x+4);G(L,x+5,2);if(coal)P(L,x+3,11,'*');return x+7},
   jetPairC:(L,x,coal)=>{pit(L,x,x+2);P(L,x+1,14,'J');G(L,x+3,2);pit(L,x+5,x+7);P(L,x+6,14,'K');if(coal)P(L,x+4,9,'*');return x+8},// the jet pair with each jet in the middle of its pit
+  sideJetRamp:(L,x,coal)=>{G(L,x,12);F(L,x+2,x+3,12,14,'#');F(L,x+4,x+5,11,14,'#');F(L,x+7,x+8,9,12,'B');P(L,x+7,9,'<');if(coal)P(L,x+8,8,'*');return x+12},// two steps up towards a tall jet block firing left over them: jump onto its top when the jet is off
+  teeth2:(L,x)=>{G(L,x,2);P(L,x,12,'^');P(L,x+1,12,'^');return x+2},// two spike teeth on the floor to jump
+  springs2:(L,x)=>{pit(L,x,x+22);for(const d of[2,9,16]){F(L,x+d,x+d+1,12,12,'@');F(L,x+d,x+d+1,13,14,'B')}P(L,x+12,5,'*');return x+23},// three two-wide springs seven apart: each throw lands on the next
+  '!q':(L,x)=>{G(L,x,7);P(L,x+1,12,'!');P(L,x+5,12,'q');return x+7},// a checkpoint with a bone guard a few tiles on
   fire2s:(L,x,coal)=>{pit(L,x,x+1);P(L,x,14,'g');P(L,x+1,14,'h');if(coal)P(L,x+1,9,'*');return x+2},// a two-tile gap with a staggered pair: one, then the other, then clear
   jetGapC:(L,x,coal)=>{pit(L,x,x+2);P(L,x+1,14,'J');if(coal)P(L,x+1,10,'*');return x+3},// a three-wide pit with the jet in the middle
   fire2:(L,x,coal)=>{pit(L,x,x+1);P(L,x,14,'i');P(L,x+1,14,'j');if(coal)P(L,x+1,9,'*');return x+2},// a two-tile gap with two flame balls at different speeds
@@ -375,6 +379,7 @@ Object.assign(SEC,{
    (up or down 2 to 4 rows at a time, never higher than the obstacle has room for). Neighbouring heights are joined
    by a short staircase going up (2 rows per step) or a drop going down, so routes climb and fall instead of
    running along one floor. Ground under a lifted obstacle is filled in; lava pits keep their lava on top. */
+const NOLIFT=new Set(['teeth2']);// pieces that stay at floor level
 function seeded(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return()=>{h=(Math.imul(h,1664525)+1013904223)>>>0;return h/4294967296}}
 function piece(it,coal){const T=blank('t',140);const w=GATE[it]?gate(T,0,it,coal):SEC[it](T,0,coal);let r0=15;
   for(let y=0;y<ROWS;y++)for(let x=0;x<w;x++)if(T.grid[y*T.w+x]!=='.'){if(y<r0)r0=y;break}return{T,w,r0}}
@@ -383,7 +388,7 @@ function lift(L,X,S,k){const T=S.T;for(let c=0;c<S.w;c++){for(let y=0;y<ROWS;y++
 function joinTo(L,x,fa,fb){const col=(x,f)=>F(L,x,x+1,f,ROWS-1,'#');col(x,fa);x+=2;
   if(fb<fa){let f=fa;while(f-2>fb){f-=2;col(x,f);x+=2}col(x,fb);x+=2}else if(fb>fa){col(x,fb);x+=2}return x}
 function terrain(name,items,start=6,tight=false){PAD.g=tight?2:6;PAD.s=tight?0:3;const L=blank(name,1600);let x=G(L,0,start);P(L,2,12,'S');let f=13;const rnd=seeded(name);
-  for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;const S=piece(it,coal);const maxK=Math.max(0,Math.min(8,S.r0-1));
+  for(const raw of items){const coal=raw.endsWith('*'),it=coal?raw.slice(0,-1):raw;const S=piece(it,coal);const maxK=NOLIFT.has(it)?0:Math.max(0,Math.min(8,S.r0-1));
     const k=13-f;let nk=0;if(maxK>0){const steps=[-4,-3,-2,2,3,4];for(let t=0;t<16;t++){nk=k+steps[Math.floor(rnd()*steps.length)];if(nk>=0&&nk<=maxK)break;nk=-1}if(nk<0)nk=Math.min(maxK,k)}
     const nf=13-nk;x=joinTo(L,x,f,nf);x=lift(L,x,S,nk);f=nf}
   x=joinTo(L,x,f,13);x=G(L,x,tight?3:4);P(L,x+(tight?2:3),12,'G');x=G(L,x,tight?4:7);PAD.g=6;PAD.s=3;
@@ -409,6 +414,7 @@ function stack(name,tiers,wells=[],tight=false){const strips=tiers.map((items,k)
   const lo=Math.min(...off),W=Math.max(...off.map((o,k)=>o+strips[k].w))-lo;const n=strips.length;const out=Array(W*ROWS*n).fill('.');
   strips.forEach((S,k)=>{const o=off[k]-lo,first=k===0,last=k===n-1;let L={name:S.name,w:S.w,grid:S.grid.slice()};
     for(let i=0;i<L.grid.length;i++){if(L.grid[i]==='S'&&!first)L.grid[i]='.';if(L.grid[i]==='G'&&!last)L.grid[i]='.';if(L.grid[i]==='^'&&!last)L.grid[i]='~'}
+    if(!last&&tight)L.grid[12*S.w+S.w-4]='^';// a tooth on the lip of the drop (the last three columns are the shaft)
     if(k%2===1)L=mirrorStrip(L);
     for(let y=0;y<ROWS;y++)for(let x=0;x<S.w;x++)out[(k*ROWS+y)*W+o+x]=L.grid[y*S.w+x];
     // a wall just outside the start of a tier, so you cannot walk off the back of it
@@ -565,12 +571,13 @@ function step(R,inp){
  H      hunter drone: follows Ember and drops when lined up
  k      the same drone red-hot: faster, lower, drops two cinders, reloads in half the time
  u      wrap grinder: circles the pillar beside it, over the top and back underneath
+ q      bone guard: stands on the floor, swings its shield when Ember comes within five tiles
  E      leaping cinder: jumps out of the lava on a rhythm
  F/L    flame ball (two phases, by column); g/h synced balls (on the beat, 40 frames after it); f a slow synced one; i/j tall versions of g/f; 1-4 a sequence, one at a time */
-const HZ_CH='JKW<>DNAHEFLPyZRVowkufghij1234';
+const HZ_CH='JKW<>DNAHEFLPyZRVowkufghij1234q';
 const hzh=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000;
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
-function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[]};let any=false;
+function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[],guards:[]};let any=false;
   for(let i=0;i<R.grid.length;i++){const ch=R.grid[i];if(ch==='.'||!HZ_CH.includes(ch))continue;any=true;const tx=i%R.w,ty=(i/R.w)|0,X=tx*TS,Y=ty*TS;
     if(ch==='J'||ch==='K'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:ch==='J'?0:60,trap:false,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~';R.hasTimed=true}
     else if(ch==='W'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:0,trap:true,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~'}
@@ -602,6 +609,7 @@ function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drop
       let x0=cx,x1=cx;while(x0>0&&sol(x0-1,a))x0--;while(x1<R.w-1&&sol(x1+1,a))x1++;
       const L=x0*TS,Rt=(x1+1)*TS,T=a*TS,B=(b+1)*TS,w=Rt-L,h=B-T,len=2*(w+h),per=Math.round(len/1.4);
       hz.grinders.push({loop:true,L,Rt,T,B,w,h,len,per,ph:(tx*53)%per,dir:1});R.grid[i]='.'}
+    else if(ch==='q'){hz.guards.push({x:X+16,y:Y+TS,face:-1,st:0,t:0});R.grid[i]='.'}// bone guard: stands here, swings its shield when Ember comes close
     else if(ch==='o'){let a=tx,b=tx,u=ty,d=ty;while(a>0&&!SOLID.has(R.grid[ty*R.w+a-1]))a--;while(b<R.w-1&&!SOLID.has(R.grid[ty*R.w+b+1]))b++;while(u>0&&!SOLID.has(R.grid[(u-1)*R.w+tx]))u--;while(d<R.rows-1&&!SOLID.has(R.grid[(d+1)*R.w+tx]))d++;
       hz.ricos.push({x0:X+16,y0:Y+16,bx0:a*TS+9,bx1:(b+1)*TS-9,by0:u*TS+9,by1:(d+1)*TS-9,vx:2.6,vy:1.9});R.grid[i]='.'}}
   hz.slides.sort((a,b)=>a.x0-b.x0);hz.slides.forEach((s,k)=>s.ph=(k*124)%248);
@@ -615,7 +623,7 @@ function pistonY(R,p,prevBot){p.ride=-1;const c=R.clock,ps=R.hz.pistons;if(p.vy<
   for(let i=0;i<ps.length;i++){const pi=ps[i];if(!(p.x<pi.x+pi.w&&p.x+p.w>pi.x))continue;const top=pistonTop(pi,c);
     if(p.y+p.h>=top&&prevBot<=top+6){const impact=p.vy;p.y=top-p.h;p.vy=0;p.onGround=true;p.gt='#';p.ride=i;if(impact>5){p.sq=.28;R.fx.dust(p.x+p.w/2,p.y+p.h,5)}return}}}
 
-function hzReset(R){const hz=R.hz;hz.drops.length=0;hz.runners.length=0;for(const b of hz.bats){b.cd=0;b.warn=0}for(const s of hz.spikes){s.st=0;s.t=0}
+function hzReset(R){const hz=R.hz;hz.drops.length=0;hz.runners.length=0;for(const b of hz.bats){b.cd=0;b.warn=0}for(const s of hz.spikes){s.st=0;s.t=0}for(const q of hz.guards){q.st=0;q.t=0;q.face=-1}
   for(const h of hz.hooks){if(h.idx>=0)R.grid[h.idx]='.';h.st=0;h.t=0;h.vy=0;h.y=h.home;h.idx=-1}
   for(const j of hz.jets){j.st=0;j.t=0}
   for(const w of hz.crows)if(w.hunt){w.x=w.hx;w.y=w.hy;w.vx=0;w.cd=40;w.warn=0;w.again=0}}
@@ -680,6 +688,12 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
     if(circHit(q.x,q.y,11,hx,hy,hw,hh))return die(R,'bat')}
   for(let i=hz.runners.length-1;i>=0;i--){const r=hz.runners[i];r.x+=r.dir*3;r.t++;const tx=Math.floor(r.x/TS),ty=Math.floor(r.y/TS);
     if(r.t>44||solidAt(R,tx,ty-1)||!solidAt(R,tx,ty)){hz.runners.splice(i,1);continue}if(hit(hx,hy,hw,hh,r.x-10,r.y-26,20,26))return die(R,'fire')}
+  for(const q of hz.guards){
+    if(q.st===0){q.face=pcx<q.x?-1:1;if(Math.abs(pcx-q.x)<5*TS&&p.y+p.h>q.y-2*TS&&p.y<q.y+8){q.st=1;q.t=18;ev('creak',q.x,q.y-20)}}
+    else if(q.st===1){if(--q.t<=0){q.st=2;q.t=14;ev('clang',q.x,q.y-20)}}
+    else if(q.st===2){const f=q.face,sx=f>0?q.x:q.x-50;if(hit(hx,hy,hw,hh,sx,q.y-52,50,52))return die(R,'guard');if(--q.t<=0){q.st=3;q.t=45}}
+    else if(q.st===3){if(--q.t<=0)q.st=0}
+    if(hit(hx,hy,hw,hh,q.x-9,q.y-34,18,34))return die(R,'guard')}
   for(const sp of hz.spikes){
     if(sp.st===0){if(p.onGround&&Math.abs(p.y+p.h-sp.y)<1&&p.x<sp.x+TS&&p.x+p.w>sp.x){sp.st=1;sp.t=20;ev('creak',sp.x+16,sp.y)}}
     else if(sp.st===1){if(--sp.t<=0){sp.st=2;sp.t=36;ev('spike',sp.x+16,sp.y)}}
@@ -1043,7 +1057,24 @@ function drawGrinder(g,q,gr,clock,t,px,py){const a=clock*.12*gr.dir;g.save();g.t
   // sparks on the wall side
   const nx=q.nx,ny=q.ny,sx=nx*17,sy=ny*17;g.strokeStyle='#ffd27a';g.lineWidth=1.5;for(let k=0;k<3;k++){const f=fract(t*7+k*.37),len=4+8*f;g.globalAlpha=1-f;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+nx*len+ny*(k-1)*len,sy+ny*len+nx*(k-1)*len);g.stroke()}g.globalAlpha=1;
   g.restore()}
+// Bone guard: a skeleton in a rusted helm with a round iron shield. It stands still, turns to face Ember, raises the shield
+// (the tell), then swings it through the space in front of and above it, and lowers it slowly before it can swing again.
+function drawGuard(g,q,t){g.save();g.translate(q.x,q.y);const f=q.face;g.scale(f,1);
+  const bob=q.st===0?Math.sin(t*3)*1.2:0;g.translate(0,bob);
+  // legs and ribs
+  g.strokeStyle='#d9d2c4';g.lineWidth=3;g.lineCap='round';g.beginPath();g.moveTo(-5,-2);g.lineTo(-5,-14);g.moveTo(5,-2);g.lineTo(5,-14);g.stroke();
+  g.fillStyle='#e8e2d6';g.fillRect(-6,-26,12,12);g.fillStyle='#2a221f';for(let k=0;k<3;k++)g.fillRect(-5,-24+k*4,10,1.5);
+  // skull and helm
+  g.fillStyle='#e8e2d6';g.beginPath();g.arc(0,-33,7,0,7);g.fill();g.fillStyle='#120404';g.fillRect(1,-35,3,3);g.fillRect(-4,-35,3,3);g.fillRect(-3,-29,6,1.5);
+  g.fillStyle='#6b4a2a';g.beginPath();g.arc(0,-35,8,Math.PI,2*Math.PI);g.fill();g.fillRect(-9,-36,18,2.5);g.fillStyle='#c2410c';g.fillRect(-1.5,-44,3,8);
+  // shield arm: angle by state
+  let a=0;if(q.st===1)a=-1.2*(1-q.t/18);else if(q.st===2)a=-1.2+2.4*(1-q.t/14);else if(q.st===3)a=1.2*(q.t/45);
+  g.save();g.translate(4,-22);g.rotate(a);g.strokeStyle='#d9d2c4';g.lineWidth=3;g.beginPath();g.moveTo(0,0);g.lineTo(14,4);g.stroke();
+  g.translate(16,4);const sg=g.createRadialGradient(-3,-3,2,0,0,13);sg.addColorStop(0,'#8d95a1');sg.addColorStop(1,'#3a3e46');g.fillStyle=sg;g.beginPath();g.arc(0,0,13,0,7);g.fill();g.strokeStyle='#c2410c';g.lineWidth=2;g.stroke();g.fillStyle='#ffb347';g.beginPath();g.arc(0,0,3,0,7);g.fill();
+  if(q.st===2){g.strokeStyle='rgba(255,210,122,.7)';g.lineWidth=3;g.beginPath();g.arc(0,0,20,-.6,.6);g.stroke()}g.restore();
+  g.restore()}
 function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
+  for(const q of hz.guards)drawGuard(g,q,t);
   for(const gr of hz.grinders){const q=grinderPos(gr,clock);
     // scorch streak along the patrol
     g.fillStyle='rgba(255,120,40,.18)';if(gr.loop){g.fillRect(gr.L,gr.T-4,gr.w,4);g.fillRect(gr.L-4,gr.T,4,gr.h);g.fillRect(gr.Rt,gr.T,4,gr.h)}else if(gr.v)g.fillRect(gr.x-(gr.dir>0?4:0),gr.lo-16,4,gr.hi-gr.lo+32);else g.fillRect(gr.lo-16,gr.y-(gr.dir>0?4:0),gr.hi-gr.lo+32,4);
@@ -1067,7 +1098,7 @@ function hzLights(R,clock,L){const hz=R.hz;
   for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d of hz.drops)L(d.x,d.y,36,.85);
   for(const h of hz.hooks)L(h.x,h.y,44,.55);for(const w of hz.crows){const q=crowPos(w,clock);L(q.x,q.y,50,.7)}
   for(const e of hz.cinders){const q=cinderPos(e,clock);if(q)L(q.x,q.y,56,.9)}
-  for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const r of hz.runners)L(r.x,r.y-8,40,.9);
+  for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const q of hz.guards)L(q.x,q.y-24,46,q.st===2?.9:.5);for(const r of hz.runners)L(r.x,r.y-8,40,.9);
   for(const fh of hz.fish)for(let k=0;k<fh.n;k++){const q=fishPos(fh,clock,k);if(q)L(q.x,q.y,40,.7)}
   for(const r of hz.ricos){const q=ricoPos(r,clock);L(q.x,q.y,60,.9)}for(const s of hz.slides)L(slideX(s,clock)+32,s.y+6,40,.4)
   for(const gr of hz.grinders){const q=grinderPos(gr,clock);L(q.x,q.y,48,.7)}}
@@ -1260,7 +1291,7 @@ function makeFx(V){
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
       if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
-      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.'};
+      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.',guard:'a <b>bone guard</b>. It raises its shield when it sees you, then swings. Let it swing, then jump over it.'};
        if(HZN[why]&&!V.replay){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
       if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
