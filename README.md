@@ -39,6 +39,7 @@ New hazards by world (every one warns before it can hurt you, and behaves the sa
 | 2 | Grinders (toothed wheels that roll along a wall or ceiling and back, or circle a pillar; stay off their stone until they have passed), in the wells at the foot of 2-3's drops |
 | 2 | Forge bats (fly at jump height, drop a slag bomb that splits into fire running both ways), sliding platforms (planks on rails, half a cycle apart), landing spikes (pop a third of a second after you land), bone fish (leap straight up from the gaps between one-block pillars, in ones, twos and threes), ricochet balls (bounce round a walled chamber) |
 | 2 | Electric walls (kill on touch while blue arcs run over them; some are always live, others pulse and flicker before they come on) and rising spikes (go up and down on their own), both in 2-4 |
+| 2 | Giant anvils (when one lands, an Ember standing nearby is paralysed for a moment; be in the air) and the fireball shooter (fires along the floor every second and a half; jump each one), together in 2-4 |
 | 3 | Fire-biters (chomping heads that leap from the lava), the slag balloon (drops cinders from its basket) |
 | 1 onward | Flame balls that shoot up out of gaps and fall back (single, or two taking turns) |
 | 2 onward | Piston pillars that rise and sink out of the lava in a wave; ride them across |

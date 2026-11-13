@@ -283,6 +283,7 @@ const GATE={
   M1c:(L,s)=>{pit(L,s,s+4);P(L,s+2,12,'C');P(L,s+2,9,'*');return[s+5,0]},// the long gap with a crumbling brick in the middle and the coal above it: hop on, jump for the coal, go
   E1f:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'v');P(L,s,14,'g');P(L,s+2,14,'h');return[s+3,s+11]},// the spike-roof gap with two flame balls in it
   E1f2:(L,s)=>{pit(L,s,s+2);G(L,s+3,2);pit(L,s+5,s+7);F(L,s-5,s+13,10,10,'v');P(L,s,14,'g');P(L,s+2,14,'h');P(L,s+5,14,'g');P(L,s+7,14,'h');return[s+8,s+13]},// two gaps under one spike bar, a staggered pair in each
+  M2s:(L,s)=>{G(L,s,25);for(let d=0;d<=24;d+=4)P(L,s+d,12,'X');F(L,s-5,s+29,10,10,'v');return[s+25,s+29]},// seven cogs on the floor under the spike bar, evenly spaced, with the bar reaching five blocks past each end
   M2f:(L,s)=>{G(L,s,17);for(const d of[0,4,8,12,16])P(L,s+d,12,'X');F(L,s-5,s+23,10,10,'v');return[s+17,s+23]},// five cogs on the floor under the spike bar, evenly spaced: five jumps
   M2q:(L,s)=>{G(L,s,13);for(const d of[0,4,8,12])P(L,s+d,12,'X');F(L,s-5,s+19,10,10,'v');return[s+13,s+19]},// four cogs on the floor under the spike bar: four jumps
   M2t:(L,s)=>{G(L,s,9);P(L,s,12,'X');P(L,s+4,12,'X');P(L,s+8,12,'X');F(L,s-5,s+15,10,10,'v');return[s+9,s+15]},// three cogs on the floor under the spike bar: three jumps
@@ -311,17 +312,21 @@ const SEC={
   chim:(L,x)=>{const hw=x+2,sw=x+5;G(L,x,6);F(L,hw,hw,0,10,'B');F(L,sw,sw,4,12,'B');F(L,sw+1,sw+3,4,4,'B');P(L,sw+2,3,'*');pit(L,sw+1,sw+4);return sw+5},
   chimSaw:(L,x,coal,noSaw)=>{const hw=x+2,sw=x+6;G(L,x,7);F(L,hw,hw,0,9,'B');F(L,sw,sw,3,12,'B');F(L,sw+1,sw+3,3,3,'B');if(!noSaw)P(L,hw+1,6,'X');// three blocks wide, saw on the left wall: at two wide with the saw a row lower, only 9% of random climbs got past it
     const b=sw+1;pit(L,b,b+18);F(L,b+5,b+6,3,3,'T');F(L,b+8,b+9,3,3,'U');F(L,b+11,b+12,3,3,'T');F(L,b+14,b+15,3,3,'U');return b+19},
-  // 2-4's opening: Ember starts on top of a one-block pillar in the lava, steps down four crumbling bricks, then crosses a raised
-  // platform cut by two five-block gaps (the longest jump in the game), with an anvil hanging over each piece of it
-  pillarRun:(L,x)=>{pit(L,x,x+41);F(L,x+2,x+2,4,14,'#');P(L,x+2,3,'S');for(let k=0;k<4;k++)P(L,x+5+k*3,5+k,'C');
-    for(const a of[17,27,37]){F(L,x+a,x+a+4,9,14,'#');P(L,x+a+2,3,'N')}return x+42},
-  // 2-4's chimney and zig-zag. Both chimney walls are electric and take turns being live. At the top, timed plates run right over
-  // a slab that is always live; a plain wall at the end is the bounce: drop down it to a second row of plates running back left
-  // over another live slab, drop off its left end to the floor, and walk out under the slab and through the gap at the wall's foot.
-  chimZig:(L,x)=>{const hw=x+2,sw=x+6,w=sw+19;G(L,x,29);F(L,hw,hw,0,9,'a');F(L,sw,sw,4,12,'b');F(L,sw,sw+3,3,3,'B');
-    for(const[d,c]of[[6,'T'],[9,'U'],[12,'T'],[15,'U']])F(L,sw+d,sw+d+1,3,3,c);F(L,sw+4,sw+15,4,4,'z');
-    F(L,w,w,0,10,'B');F(L,sw+17,sw+18,9,9,'B');
-    for(const[d,c]of[[13,'T'],[10,'U'],[7,'T'],[4,'U']])F(L,sw+d,sw+d+1,9,9,c);F(L,sw+5,sw+18,10,10,'z');return x+29},
+  // 2-4's opening: Ember starts on top of a one-block pillar in the lava and goes down an uneven staircase of four crumbling bricks
+  // (drops of one, two, one and one rows, at different spacings), then crosses a raised platform cut by two five-block gaps (the
+  // longest jump in the game). An anvil hangs over each piece of the platform, and each gap holds a pool of lava with two flame
+  // balls leaping from it, one at normal speed and one slow, in opposite order in the two gaps.
+  pillarRun:(L,x)=>{pit(L,x,x+41);F(L,x+2,x+2,4,14,'#');P(L,x+2,3,'S');for(const[d,r]of[[4,5],[7,7],[11,8],[14,9]])P(L,x+d,r,'C');
+    for(const a of[17,27,37]){F(L,x+a,x+a+4,9,14,'#');P(L,x+a+2,3,'N')}
+    for(const[a,c1,c2]of[[22,'g','f'],[32,'f','g']]){F(L,x+a,x+a+4,11,14,'#');F(L,x+a,x+a+4,10,10,'~');P(L,x+a+1,10,c1);P(L,x+a+3,10,c2)}return x+42},
+  // 2-4's chimney and zig-zag. Both chimney walls are electric and take turns being live. At the top, four timed plates (two
+  // blocks each, two blocks apart) run right over a slab that is always live, to a plain wall: the bounce. Drop down beside it
+  // (three blocks wide) to a landing pad, cross a second row of plates back left over a second live slab, drop off its left end
+  // to the floor, and walk out under the slab and through the gap at the wall's foot. Both slabs span the same columns.
+  chimZig:(L,x)=>{const hw=x+2,sw=x+6,w=sw+23;G(L,x,33);F(L,hw,hw,0,9,'a');F(L,sw,sw,4,12,'b');F(L,sw,sw+3,3,3,'B');
+    for(const[d,c]of[[6,'T'],[10,'U'],[14,'T'],[18,'U']])F(L,sw+d,sw+d+1,3,3,c);F(L,sw+4,sw+19,4,4,'z');
+    F(L,w,w,0,10,'B');F(L,sw+20,sw+22,9,10,'B');
+    for(const[d,c]of[[16,'T'],[12,'U'],[8,'T'],[4,'U']])F(L,sw+d,sw+d+1,9,9,c);F(L,sw+4,sw+19,10,10,'z');return x+33},
   chimDesc:(L,x)=>{const hw=x+2,sw=x+5;G(L,x,6);F(L,hw,hw,0,8,'B');F(L,sw,sw,2,12,'B');F(L,sw+1,sw+3,2,2,'B');
     const b=sw+1;pit(L,b,b+23);F(L,b+4,b+5,6,6,'T');F(L,b+8,b+9,9,9,'U');F(L,b+12,b+13,11,11,'T');P(L,b+16,11,'C');P(L,b+19,11,'C');return b+24},
   chim1:(L,x)=>{const hw=x+2,sw=x+4;G(L,x,5);F(L,hw,hw,0,9,'B');F(L,sw,sw,2,12,'B');F(L,sw+1,sw+3,2,2,'B');
@@ -363,6 +368,8 @@ Object.assign(SEC,{
   sideLow:(L,x,coal)=>{G(L,x,10);F(L,x+6,x+7,12,12,'B');P(L,x+6,12,'<');F(L,x+1,x+5,9,9,'v');if(coal)P(L,x+8,11,'*');return x+10},
   ladleRun:(L,x,coal)=>{G(L,x,12);P(L,x+2,7,'D');if(coal)P(L,x+6,11,'*');return x+12},
   ladlePits:(L,x,coal)=>{G(L,x,2);pit(L,x+2,x+4);G(L,x+5,2);pit(L,x+7,x+9);G(L,x+10,3);P(L,x+2,7,'D');if(coal)P(L,x+6,11,'*');return x+13},
+  // 2-4: two giant anvils over a flat floor and a fireball shooter at its far end, firing back along it
+  hookFloorBig:(L,x)=>{G(L,x,14);P(L,x+3,5,'M');P(L,x+8,5,'M');P(L,x+13,12,'c');return x+14},
   hookFloor:(L,x,coal)=>{G(L,x,12);P(L,x+4,6,'N');P(L,x+8,6,'N');if(coal)P(L,x+6,11,'*');return x+12},
   hookPit:(L,x,coal)=>{pit(L,x,x+6);P(L,x+3,6,'N');if(coal)P(L,x+3,10,'*');return x+7},
   lavaBiters:(L,x,coal)=>{pit(L,x,x+11);F(L,x+3,x+3,12,14,'#');F(L,x+7,x+7,12,14,'#');P(L,x+1,14,'E');P(L,x+5,14,'E');P(L,x+9,14,'E');if(coal)P(L,x+7,10,'*');return x+12},
@@ -479,8 +486,8 @@ const LEVELS=[
   build(){return terrain('Vent Ceiling',['sideJet','springsC','H*','!','batGap','springsCO','ladleRun','Hp','E1'])}},
  {id:'w2c',world:1,code:'2-3',heat:1980,fm:2678,name:'Rail Cogs',intro:'A switchback: right, then left, then right. The first drop is a well of ledges with <b>grinders</b> on its walls; the second is a well over lava with grinders on the wall. It ends on one-tile pillars that <b>grinders</b> circle, under the <b>red-hot drone</b>. Cogs on rails keep a fixed beat. Count it once, then go.',
   build(){return stack('Rail Cogs',[['movers','H*','ladlePits'],['!','pistonPit','slideGap','moversC'],['!','M2*','fireGap2','grindPillars']],['ledges','grinder'])}},
- {id:'w2d',world:1,code:'2-4',heat:2340,fm:2373,name:'Saw Chimney',intro:'Blue arcs mean a wall is live. Climb the chimney on the wall that has gone quiet.',
-  build(){const L=terrain('Saw Chimney',['pillarRun','chim','hookFloor','spikeRunF','M2f*','!','chimZig','Hp','hookPit'],1),W=L.w;
+ {id:'w2d',world:1,code:'2-4',heat:2700,fm:2713,name:'Saw Chimney',intro:'Blue arcs mean a wall is live. Climb the chimney on the wall that has gone quiet.',
+  build(){const L=terrain('Saw Chimney',['pillarRun','chim','hookFloorBig','spikeRunF','M2s*','!','chimZig','Hp','hookPit'],1),W=L.w;
     // the builder's own start tile and floor give way to the pillar: lava up to it, and Ember starts on its top
     L.grid[12*W+2]='.';const sx=L.grid.indexOf('S')%W;for(let x=0;x<sx;x++){L.grid[13*W+x]='.';L.grid[14*W+x]='^'}return L}},
  {id:'w2e',world:1,code:'2-5',heat:2580,fm:2091,name:'First Beat',intro:'Molten plates are solid for one hammer beat, cold plates for the next. Listen for the hammer.',
@@ -515,7 +522,7 @@ function makeRun(src,opts={}){const grid=src.grid.slice();let sx=2,sy=12,gems=0;
   const R={name:src.name,w:src.w,rows:grid.length/src.w,h:grid.length/src.w*TS,grid,start:{x:sx,y:sy},check:null,crumb:new Map(),movers,braz,hasTimed,deaths:0,clock:0,gems:0,gemsTotal:gems,won:false,p:null,deadT:0,
     heatMax:opts.heat||src.heat||3600,heat:0,fx:opts.fx||NOFX,noGems:!!opts.noGems};
   hzInit(R);spawn(R);return R}
-function spawn(R){const s=R.check||R.start;R.heat=R.heatMax;R.p={x:s.x*TS+5,y:s.y*TS+TS-26,vx:0,vy:0,w:22,h:26,onGround:false,coyote:0,buf:0,face:1,lock:0,cut:false,sq:0,runT:0,gt:'#',dead:false,ride:-1,ride2:-1};if(R.hz)hzReset(R)}
+function spawn(R){const s=R.check||R.start;R.heat=R.heatMax;R.p={x:s.x*TS+5,y:s.y*TS+TS-26,vx:0,vy:0,w:22,h:26,onGround:false,coyote:0,buf:0,face:1,lock:0,cut:false,sq:0,runT:0,gt:'#',dead:false,ride:-1,ride2:-1,stun:0};if(R.hz)hzReset(R)}
 function tileAt(R,tx,ty){if(tx<0||tx>=R.w)return'B';if(ty<0||ty>=R.rows)return'.';return R.grid[ty*R.w+tx]}
 function solidAt(R,tx,ty){if(ty<0)return true;if(ty>=R.rows)return false;if(tx<0||tx>=R.w)return true;const c=R.grid[ty*R.w+tx];
   if(c==='C'){const s=R.crumb.get(ty*R.w+tx);return!(s&&s.gone>0)}if(c==='T'||c==='U')return timedOn(c,R.clock);return SOLID.has(c)}
@@ -532,8 +539,9 @@ function step(R,inp){
     else if(c.gone>0){if(--c.gone===0){const tx=i%R.w,ty=(i/R.w)|0;if(hit(p.x,p.y,p.w,p.h,tx*TS,ty*TS,TS,TS))c.gone=1;else R.crumb.delete(i)}}}
   if(R.hasTimed){const a=Math.floor(p.x/TS),b=Math.floor((p.x+p.w-.01)/TS),c0=Math.floor(p.y/TS),c1=Math.floor((p.y+p.h-.01)/TS);
     for(let ty=c0;ty<=c1;ty++)for(let tx=a;tx<=b;tx++){const c=tileAt(R,tx,ty);if((c==='T'||c==='U')&&timedOn(c,R.clock))return die(R,'crush')}}
-  const dir=inp.dir;
-  if(inp.pressed)p.buf=7;else if(p.buf>0)p.buf--;
+  // paralysed (a giant anvil landed while Ember stood on the ground): no steering and no jumping until it wears off
+  let dir=inp.dir,held=inp.held,pressed=inp.pressed;if(p.stun>0){p.stun--;dir=0;held=false;pressed=false;p.buf=0}
+  if(pressed)p.buf=7;else if(p.buf>0)p.buf--;
   if(dir)p.face=dir>0?1:-1;
   const ice=p.onGround&&p.gt==='I';
   const acc=p.onGround?(ice?.13:.75):.45,fric=p.onGround?(ice?.035:.6):.12,MAX=4.2;
@@ -545,7 +553,7 @@ function step(R,inp){
     if(p.coyote>0){p.vy=-10.5;p.cut=true;p.coyote=0;p.buf=0;p.onGround=false;p.sq=-.3;R.fx.sfx('jump');R.fx.dust(p.x+p.w/2,p.y+p.h,4)}
     else if(!p.onGround&&(touchL||touchR)){const away=touchR?-1:1;p.vx=away*5;p.vy=-9.8;p.lock=8;p.face=away;p.cut=false;p.buf=0;p.sq=-.25;R.fx.sfx('wall');R.fx.dust(away>0?p.x:p.x+p.w,p.y+p.h/2,4)}
   }
-  if(!inp.held&&p.cut&&p.vy<0){p.vy*=.45;p.cut=false}
+  if(!held&&p.cut&&p.vy<0){p.vy*=.45;p.cut=false}
   if(p.vy>=0)p.cut=false;
   p.vy+=.6;
   if(!p.onGround&&p.vy>2.2&&((touchL&&dir<0)||(touchR&&dir>0))){p.vy=2.2;if(R.clock%5===0)R.fx.dust(touchL?p.x:p.x+p.w,p.y+p.h-4,1)}
@@ -571,7 +579,7 @@ function step(R,inp){
   // a live electric block kills on contact with any face (standing on it, sliding down it, bumping it); a corner graze does not
   {const a0=Math.floor((p.x-1)/TS),a1=Math.floor((p.x+p.w)/TS),b0=Math.floor((p.y-1)/TS),b1=Math.floor((p.y+p.h)/TS);
     for(let ty=b0;ty<=b1;ty++)for(let tx=a0;tx<=a1;tx++){if(tx<0||tx>=R.w)continue;const c=tileAt(R,tx,ty);if(!elecLive(c,R.clock))continue;const X=tx*TS,Y=ty*TS;
-      if(hit(p.x-1,p.y+2,p.w+2,p.h-4,X,Y,TS,TS)||hit(p.x+2,p.y-1,p.w-4,p.h+2,X,Y,TS,TS))return die(R,'shock')}}
+      if(hit(p.x-.5,p.y+2,p.w+1,p.h-4,X,Y,TS,TS)||hit(p.x+2,p.y-1,p.w-4,p.h+2,X,Y,TS,TS))return die(R,'shock')}}
   const tx0=Math.floor(p.x/TS),tx1=Math.floor((p.x+p.w)/TS),ty0=Math.floor(p.y/TS),ty1=Math.floor((p.y+p.h)/TS)+3;
   for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const c=tileAt(R,tx,ty),X=tx*TS,Y=ty*TS;
     if(c==='^'&&hit(hx,hy,hw,hh,X+4,Y+14,24,18))return die(R,ty===R.rows-1?'melt':'hit');
@@ -601,16 +609,22 @@ function step(R,inp){
  q      bone guard: stands on the floor, swings its shield when Ember comes within five tiles
  E      leaping cinder: jumps out of the lava on a rhythm
  F/L    flame ball (two phases, by column); g/h synced balls (on the beat, 40 frames after it); f a slow synced one; i/j tall versions of g/f; 1-4 a sequence, one at a time */
-const HZ_CH='JKW<>DNAHEFLPyZRVowkufghij1234qr';
+const HZ_CH='JKW<>DNAHEFLPyZRVowkufghij1234qrMc';
+// the tiles a landed anvil fills: one, or a 2 x 2 square for a giant one (h.idx is its bottom-left tile)
+function hookCells(R,h){return h.big?[h.idx,h.idx+1,h.idx-R.w,h.idx-R.w+1]:[h.idx]}
 const hzh=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000;
 function triP(c,per){const u=(c%per)/per;return u<.5?u*2:2-u*2}
-function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[],guards:[]};let any=false;
+function hzInit(R){const hz={jets:[],ladles:[],hooks:[],crows:[],cinders:[],drops:[],pistons:[],bats:[],runners:[],slides:[],spikes:[],fish:[],ricos:[],grinders:[],guards:[],guns:[],shots:[]};let any=false;
   for(let i=0;i<R.grid.length;i++){const ch=R.grid[i];if(ch==='.'||!HZ_CH.includes(ch))continue;any=true;const tx=i%R.w,ty=(i/R.w)|0,X=tx*TS,Y=ty*TS;
     if(ch==='J'||ch==='K'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:ch==='J'?0:60,trap:false,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~';R.hasTimed=true}
     else if(ch==='W'){hz.jets.push({x:X+16,y:Y+10,dir:0,len:6*TS,ph:0,trap:true,st:0,t:0});R.grid[i]=ty===R.rows-1?'^':'~'}
     else if(ch==='<'||ch==='>'){const d=ch==='>'?1:-1;hz.jets.push({x:d>0?X+TS:X,y:Y+16,dir:d,len:4*TS,ph:0,trap:false,st:0,t:0});R.grid[i]='B';R.hasTimed=true}
     else if(ch==='D'){hz.ladles.push({x0:X+16,y:Y+12,span:6*TS,per:240,every:48,off:0});R.grid[i]='.'}
     else if(ch==='N'){hz.hooks.push({x:X+16,y:Y+16,home:Y+16,st:0,t:0,vy:0,idx:-1});R.grid[i]='.'}
+    // giant anvil: two blocks wide and tall (this tile is its top-left quarter). When it lands the floor quakes: Ember is paralysed if he is standing nearby
+    else if(ch==='M'){hz.hooks.push({x:X+32,y:Y+32,home:Y+32,st:0,t:0,vy:0,idx:-1,big:1});R.grid[i]='.'}
+    // fireball shooter: a steel block that fires a fireball left along the floor every 1.5 s while Ember is in front of it
+    else if(ch==='c'){hz.guns.push({x:X,y:Y+21,ph:(hz.guns.length*45)%90});R.grid[i]='B'}
     else if(ch==='A'){hz.crows.push({hunt:false,x0:X+16,y0:Y+16,span:8*TS,per:300,every:64,off:(tx*13)%64});R.grid[i]='.'}
     else if(ch==='H'||ch==='k'){hz.crows.push({hunt:true,hot:ch==='k',x:X+16,y:Y+16,hx:X+16,hy:Y+16,vx:0,cd:40,warn:0,again:0,lo:X-10*TS,hi:X+40*TS,top:Math.floor(ty/ROWS)*ROWS*TS});R.grid[i]='.'}
     else if(ch==='F'||ch==='L'){hz.cinders.push({x:X+16,base:Y+12,ph:((tx*37)+(ch==='L'?75:0))%150,per:150,ball:true});R.grid[i]=ty===R.rows-1?'^':'~'}
@@ -652,12 +666,12 @@ function pistonY(R,p,prevBot){p.ride=-1;const c=R.clock,ps=R.hz.pistons;if(p.vy<
   for(let i=0;i<ps.length;i++){const pi=ps[i];if(!(p.x<pi.x+pi.w&&p.x+p.w>pi.x))continue;const top=pistonTop(pi,c);
     if(p.y+p.h>=top&&prevBot<=top+6){const impact=p.vy;p.y=top-p.h;p.vy=0;p.onGround=true;p.gt='#';p.ride=i;if(impact>5){p.sq=.28;R.fx.dust(p.x+p.w/2,p.y+p.h,5)}return}}}
 
-function hzReset(R){const hz=R.hz;hz.drops.length=0;hz.runners.length=0;for(const b of hz.bats){b.cd=0;b.warn=0}for(const s of hz.spikes){s.st=0;s.t=0}for(const q of hz.guards){q.st=0;q.t=0;q.face=-1}
-  for(const h of hz.hooks){if(h.idx>=0)R.grid[h.idx]='.';h.st=0;h.t=0;h.vy=0;h.y=h.home;h.idx=-1}
+function hzReset(R){const hz=R.hz;hz.drops.length=0;hz.shots.length=0;hz.runners.length=0;for(const b of hz.bats){b.cd=0;b.warn=0}for(const s of hz.spikes){s.st=0;s.t=0}for(const q of hz.guards){q.st=0;q.t=0;q.face=-1}
+  for(const h of hz.hooks){if(h.idx>=0)for(const i of hookCells(R,h))R.grid[i]='.';h.st=0;h.t=0;h.vy=0;h.y=h.home;h.idx=-1}
   for(const j of hz.jets){j.st=0;j.t=0}
   for(const w of hz.crows)if(w.hunt){w.x=w.hx;w.y=w.hy;w.vx=0;w.cd=40;w.warn=0;w.again=0}}
 // after the solver restores a saved hazard state, put landed anvils back into the grid
-function hzSync(R){if(!R.hz)return;for(const i of R.hzN)R.grid[i]='.';for(const h of R.hz.hooks)if(h.st===3||h.st===4)R.grid[h.idx]='n'}
+function hzSync(R){if(!R.hz)return;for(const i of R.hzN)R.grid[i]='.';for(const h of R.hz.hooks)if(h.st===3||h.st===4)for(const i of hookCells(R,h))R.grid[i]='n'}
 // returns [warning 0..1, flame 0..1]
 function jetHeat(j,clock){
   if(j.trap){if(j.st===1)return[1-j.t/22,0];if(j.st===2){const f=36-j.t;return[0,f<5?f/5:j.t<6?j.t/6:1]}return[0,0]}
@@ -698,18 +712,24 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
   for(let i=hz.drops.length-1;i>=0;i--){const d=hz.drops[i];d.vy=Math.min(9,d.vy+.32);d.y+=d.vy;const tx=Math.floor(d.x/TS),ty=Math.floor((d.y+d.r)/TS);
     if(d.y>R.h+20||(ty>=0&&ty<R.rows&&(solidAt(R,tx,ty)||((tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&d.y+d.r>ty*TS+14)))){hz.drops.splice(i,1);ev('splash',d.x,Math.min(d.y,R.h));if(d.k==='bomb'&&ty>=0&&ty<R.rows&&solidAt(R,tx,ty)){for(const dir of[-1,1])hz.runners.push({x:d.x,y:ty*TS,dir,t:0});ev('flare',d.x,ty*TS)}continue}
     if(circHit(d.x,d.y,d.r,hx,hy,hw,hh))return die(R,d.k)}
+  for(const q of hz.guns){if((c+q.ph)%90===0&&pcx<q.x&&pcx>q.x-20*TS&&Math.abs(p.y+p.h/2-q.y)<6*TS){hz.shots.push({x:q.x-8,y:q.y,vx:-3.2,t:0});ev('shot',q.x,q.y)}}
+  for(let i=hz.shots.length-1;i>=0;i--){const d=hz.shots[i];d.x+=d.vx;d.t++;
+    if(d.t>400||solidAt(R,Math.floor((d.x-7)/TS),Math.floor(d.y/TS))){hz.shots.splice(i,1);ev('splash',d.x,d.y);continue}
+    if(circHit(d.x,d.y,7,hx,hy,hw,hh))return die(R,'shot')}
   for(const h of hz.hooks){
-    if(h.st===0){if(pcx>h.x-128&&pcx<h.x+40&&p.y>h.y){h.st=1;h.t=20;ev('creak',h.x,h.y)}}
+    if(h.st===0){if(pcx>h.x-(h.big?176:128)&&pcx<h.x+(h.big?56:40)&&p.y>h.y){h.st=1;h.t=20;ev('creak',h.x,h.y)}}
     else if(h.st===1){if(--h.t<=0)h.st=2}
-    else if(h.st===2){h.vy=Math.min(12,h.vy+.55);h.y+=h.vy;if(hit(hx,hy,hw,hh,h.x-14,h.y-15,28,30))return die(R,'anvil');
-      const tx=Math.floor(h.x/TS),ty=Math.floor((h.y+16)/TS),sol=solidAt(R,tx,ty),lava=(tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&ty<R.rows;
-      if(sol||lava||ty>=R.rows-1){const ly=(sol||lava)?ty-1:R.rows-2;h.st=3;h.t=120;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
-        if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil');
+    else if(h.st===2){h.vy=Math.min(12,h.vy+.55);h.y+=h.vy;if(hit(hx,hy,hw,hh,h.x-(h.big?30:14),h.y-(h.big?31:15),h.big?60:28,h.big?62:30))return die(R,'anvil');
+      const B=h.big?1:0,tx=Math.floor((h.x-B*16)/TS),ty=Math.floor((h.y+16+B*16)/TS),sol=solidAt(R,tx,ty)||(B===1&&solidAt(R,tx+1,ty)),lava=(tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&ty<R.rows;
+      if(sol||lava||ty>=R.rows-1){const ly=(sol||lava)?ty-1:R.rows-2;h.st=3;h.t=120;h.y=ly*TS+16-B*16;h.idx=ly*R.w+tx;for(const i of hookCells(R,h)){R.grid[i]='n';R.hzN.add(i)}ev('clang',h.x,h.y+16+B*16);
+        // the quake: 0.75 s of paralysis for an Ember standing on the ground within eight blocks; in the air he is safe
+        if(B&&p.onGround&&Math.abs(pcx-h.x)<8*TS){p.stun=45;p.vx=0;ev('quake',pcx,p.y)}
+        if(hit(hx,hy,hw,hh,tx*TS,(ly-B)*TS,TS*(1+B),TS*(1+B)))return die(R,'anvil');
         // a graze (the outer 2 px of Ember, which never kill) must not leave him inside the new block: slide him out the nearest side
-        const bx=tx*TS,by=ly*TS;if(hit(p.x,p.y,p.w,p.h,bx,by,TS,TS)){const oL=p.x+p.w-bx,oR=bx+TS-p.x,oT=p.y+p.h-by,oB=by+TS-p.y,m=Math.min(oL,oR,oT,oB);
-          if(m===oL)p.x=bx-p.w;else if(m===oR)p.x=bx+TS;else if(m===oT)p.y=by-p.h;else p.y=by+TS}}}
+        const bx=tx*TS,by=(ly-B)*TS,bs=TS*(1+B);if(hit(p.x,p.y,p.w,p.h,bx,by,bs,bs)){const oL=p.x+p.w-bx,oR=bx+bs-p.x,oT=p.y+p.h-by,oB=by+bs-p.y,m=Math.min(oL,oR,oT,oB);
+          if(m===oL)p.x=bx-p.w;else if(m===oR)p.x=bx+bs;else if(m===oT)p.y=by-p.h;else p.y=by+bs}}}
     else if(h.st===3){if(--h.t<=0){h.st=4;h.t=24;ev('creak',h.x,h.y)}}
-    else if(h.st===4){if(--h.t<=0){h.st=5;R.grid[h.idx]='.';ev('lift',h.x,h.y)}}
+    else if(h.st===4){if(--h.t<=0){h.st=5;for(const i of hookCells(R,h))R.grid[i]='.';ev('lift',h.x,h.y)}}
     else if(h.st===5){h.y-=2.5;if(h.y<=h.home){h.y=h.home;h.st=6;h.t=45;h.idx=-1;h.vy=0}}
     else if(h.st===6){if(--h.t<=0)h.st=0}
   }
@@ -749,7 +769,7 @@ const ACTS=[[-1,0],[-1,1],[0,0],[0,1],[1,0],[1,1]];
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-12 v68';
+const BUILD='2026-11-12 v69';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
    braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 4 sessions) and,
@@ -1031,8 +1051,9 @@ function drawLadle(g,d,clock,t){const q=ladlePos(d,clock),ry=d.y-16;
 function drawDrop(g,d){const s=Math.min(2.2,1+d.vy*.13),gr=g.createRadialGradient(d.x,d.y,1,d.x,d.y,d.r+4);
   if(d.k==='slag'){gr.addColorStop(0,'#fffbea');gr.addColorStop(.45,'#ffc15e');gr.addColorStop(1,'rgba(255,106,26,0)')}else{gr.addColorStop(0,'#ffd1b8');gr.addColorStop(.45,'#ff5a2a');gr.addColorStop(1,'rgba(168,30,10,0)')}
   g.fillStyle=gr;g.beginPath();g.ellipse(d.x,d.y-(s-1)*d.r*.7,d.r+2,(d.r+2)*s,0,0,7);g.fill()}
-function drawHook(g,h,t){const sh=h.st===1||h.st===4,ox=sh?Math.sin(t*90)*2.4:0,x=h.x+ox,end=(h.st===2?h.home:h.y)-16;
-  g.strokeStyle='#4a4f58';g.lineWidth=2;for(let cy=-4;cy<end;cy+=8)g.strokeRect(x-2.5,cy,5,7);if(h.st!==2){g.strokeStyle='#8d95a1';g.beginPath();g.arc(x,end+1,4,0,Math.PI);g.stroke()}drawAnvil(g,x,h.y,sh?.95:.35)}
+function drawHook(g,h,t){const sh=h.st===1||h.st===4,ox=sh?Math.sin(t*90)*2.4:0,x=h.x+ox,end=(h.st===2?h.home:h.y)-(h.big?32:16);
+  g.strokeStyle='#4a4f58';g.lineWidth=2;for(let cy=-4;cy<end;cy+=8)g.strokeRect(x-2.5,cy,5,7);if(h.st!==2){g.strokeStyle='#8d95a1';g.beginPath();g.arc(x,end+1,4,0,Math.PI);g.stroke()}
+  if(h.big){g.save();g.translate(x,h.y);g.scale(2,2);drawAnvil(g,0,0,sh?.95:.35);g.restore()}else drawAnvil(g,x,h.y,sh?.95:.35)}
 function drawBalloon(g,x,y,t,warm){g.save();g.translate(x,y);g.rotate(Math.sin(t*1.6+x*.01)*.06);
   // ropes
   g.strokeStyle='#8a6a52';g.lineWidth=1;g.beginPath();g.moveTo(-10,-2);g.lineTo(-6,10);g.moveTo(10,-2);g.lineTo(6,10);g.moveTo(-3,0);g.lineTo(-2,10);g.moveTo(3,0);g.lineTo(2,10);g.stroke();
@@ -1175,6 +1196,10 @@ function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
   for(const pi of hz.pistons)drawPiston(g,pi,pistonTop(pi,clock));
   for(const d of hz.ladles)drawLadle(g,d,clock,t);
   for(const h of hz.hooks)drawHook(g,hzI(h,1),t);
+  // fireball shooters (a muzzle on the left face that glows as the next shot nears) and their fireballs
+  for(const q of hz.guns){const x=q.x,y=q.y-21,f=((clock+q.ph)%90+90)%90,w=f>62?(f-62)/28:0;g.fillStyle='#1b1f26';g.fillRect(x,y,TS,TS);g.fillStyle='#4a5260';g.fillRect(x+2,y+2,TS-4,TS-4);
+    g.fillStyle='#14161a';g.fillRect(x-7,y+12,16,18);g.fillStyle='#8d95a1';g.fillRect(x-7,y+12,3,18);g.fillStyle=`rgba(255,${Math.round(110+110*w)},40,${.3+.7*w})`;g.beginPath();g.arc(x+17,y+16,6,0,7);g.fill();g.fillRect(x-4,y+18,10,6)}
+  for(const d0 of hz.shots){const d=hzI(d0,0);for(let k=5;k>=0;k--){g.fillStyle=k>2?'rgba(255,80,20,'+(.45-k*.06)+')':'rgba(255,205,95,'+(.95-k*.2)+')';g.beginPath();g.arc(d.x+k*5,d.y+Math.sin(t*30+k*1.3)*(k*.5),Math.max(2,8-k*1.1),0,7);g.fill()}}
   for(const e of hz.cinders){const f=(clock+e.ph)%e.per;if(f>e.per-30)drawBubbles(g,e.x,e.base,t,(f-(e.per-30))/30);const q=cinderPos(e,clock);if(q){if(e.ball)drawFireball(g,q.x,q.y,t,q.f*(e.spd||1)<34?1:-1);else drawChomper(g,q.x,q.y,t,q.f<34?1:-1,R.p.x+11,R.p.y+13)}}
   for(const j of hz.jets){const s=jetHeat(j,clock);drawJet(g,j,s[0],s[1],t)}
   for(const d of hz.drops)drawDrop(g,hzI(d,0));for(const d0 of hz.drops)if(d0.k==='bomb'){const d=hzI(d0,0);g.fillStyle='#1c1f25';g.beginPath();g.arc(d.x,d.y,8,0,7);g.fill();g.strokeStyle='#ffb347';g.lineWidth=1.5;g.beginPath();g.moveTo(d.x-6,d.y-2);g.lineTo(d.x-1,d.y+1);g.lineTo(d.x+2,d.y-4);g.moveTo(d.x,d.y+2);g.lineTo(d.x+5,d.y+4);g.stroke();g.fillStyle='rgba(255,120,40,.5)';g.beginPath();g.arc(d.x,d.y,10,0,7);g.fill()}
@@ -1182,7 +1207,7 @@ function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
     if(w.hunt)drawDrone(g,q.x,q.y,t,w.warn,R.p.x+11,R.p.y+13,w.hot);else drawBalloon(g,q.x,q.y,t,warm)}}
 function hzLights(R,clock,L){const hz=R.hz;
   for(const j of hz.jets){const s=jetHeat(j,clock);if(s[1]>0){const b=jetBox(j,s[1]);L(b[0]+b[2]/2,b[1]+b[3]/2,60+j.len*s[1]*.4,.95)}else L(j.x,j.y-6,30+50*s[0],.35+.55*s[0])}
-  for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d0 of hz.drops){const d=hzI(d0,0);L(d.x,d.y,36,.85)}
+  for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d0 of hz.drops){const d=hzI(d0,0);L(d.x,d.y,36,.85)}for(const d0 of hz.shots){const d=hzI(d0,0);L(d.x,d.y,46,.9)}
   for(const h0 of hz.hooks){const h=hzI(h0,1);L(h.x,h.y,44,.55)}for(const w of hz.crows){const q=crowPos(hzI(w,2),clock);L(q.x,q.y,50,.7)}
   for(const e of hz.cinders){const q=cinderPos(e,clock);if(q)L(q.x,q.y,56,.9)}
   for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const q of hz.guards)L(q.x,q.y-24,46,q.st===2?.9:.5);for(const r0 of hz.runners){const r=hzI(r0,3);L(r.x,r.y-8,40,.9)}
@@ -1379,7 +1404,7 @@ function makeFx(V){
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
       addDeath(LEVELS[V.idx].id);burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
-      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',rspike:'<b>rising spikes</b>. They go up and down on their own. Land as they sink.',shock:'an <b>electric wall</b>. Blue arcs mean it is live. Touch it only when the arcs are gone.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.',guard:'a <b>bone guard</b>. It raises its shield when it sees you, then swings. Let it swing, then jump over it.'};
+      {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',shot:'a <b>cannon fireball</b>. It flies along the floor: jump it, and be in the air when a giant anvil lands or you are stuck in its path.',rspike:'<b>rising spikes</b>. They go up and down on their own. Land as they sink.',shock:'an <b>electric wall</b>. Blue arcs mean it is live. Touch it only when the arcs are gone.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.',guard:'a <b>bone guard</b>. It raises its shield when it sees you, then swings. Let it swing, then jump over it.'};
        if(HZN[why]){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
       if(why==='burn'&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
@@ -1389,6 +1414,7 @@ function makeFx(V){
     hz:(k,x,y)=>{const p=V.R&&V.R.p;if(!p||Math.abs(x-p.x)>560)return;
       if(k==='warn')SFX.warn();else if(k==='flare'){SFX.flare();burst(x,y-6,10,['#fff1c9','#ffb347','#ff6a1a'],3,-.05)}else if(k==='pour')SFX.pour();
       else if(k==='splash'||k==='drop'){SFX.splash();if(k==='splash')burst(x,y,6,['#ffb347','#ff6a1a'],2,.2)}else if(k==='clang'){V.shake=Math.max(V.shake,reduceMotion?0:6);SFX.clang();burst(x,y,14,['#8d95a1','#ffb347','#ff6a1a'],3,.2)}
+      else if(k==='quake'){V.shake=Math.max(V.shake,reduceMotion?0:14);SFX.clang()}else if(k==='shot')SFX.flare();
       else if(k==='bubble')SFX.pour();else if(k==='spike')SFX.crumble();
       else if(k==='creak')SFX.creak();else if(k==='lift')SFX.lift();else if(k==='caw')SFX.caw();else if(k==='leap'){SFX.splash();burst(x,y,8,['#ffb347','#ff6a1a'],2.5,.2)}},
     crumble:(R,i)=>{const tx=i%R.w,ty=(i/R.w)|0;burst(tx*TS+16,ty*TS+16,12,['#4a3a31','#ff6a1a'],2.5,.25);SFX.crumble()},
@@ -1822,6 +1848,7 @@ const SAVE_STEPS=[
   ['w2d','f2','f3'],// 7: the saw chimney in 2-4, 2-10 and 3-1 was widened to three blocks, with the saw a row higher
   ['w2d'],// 8: 2-4 lost its chimney saw and gained two flame balls and four more saws under the spike roof
   ['w2d'],// 9: 2-4 rebuilt: pillar start, long gaps, rising spikes, electric chimney and a zig-zag of timed plates
+  ['w2d'],// 10: 2-4 again: giant anvils that stun, a fireball shooter, flame balls in the long gaps, seven saws, a wider zig-zag
 ];
 (()=>{const OLD=['tf3-f1v2','tf3-f2v2','tf3-hz1','tf3-hz2','tf3-terrain1','tf3-round2'];// the one-off flags used before tf3-ver, in order
   let v=store.get('tf3-ver',null);const had=v;
@@ -1914,7 +1941,7 @@ $('#buildTag').textContent='Build '+BUILD.split(' ')[1];
 
 /* ---------------- Loop ---------------- */
 function tick(){if(V){const q=V.R.p,I=V.ip,hz=V.R.hz;I.x=q.x;I.y=q.y;I.cx=V.cam.x;I.cy=V.cam.y;I.clk=V.R.clock;
-    if(hz){for(const d of hz.drops){d.px=d.x;d.py=d.y}for(const h of hz.hooks){h.px=h.x;h.py=h.y}for(const r of hz.runners){r.px=r.x;r.py=r.y}for(const w of hz.crows)if(w.hunt){w.px=w.x;w.py=w.y}}}
+    if(hz){for(const d of hz.drops){d.px=d.x;d.py=d.y}for(const d of hz.shots){d.px=d.x;d.py=d.y}for(const h of hz.hooks){h.px=h.x;h.py=h.y}for(const r of hz.runners){r.px=r.x;r.py=r.y}for(const w of hz.crows)if(w.hunt){w.px=w.x;w.py=w.y}}}
   if(!V||V.paused)return;const R=V.R;
   for(const[i,a]of V.springAnim){if(a<=1)V.springAnim.delete(i);else V.springAnim.set(i,a-1)}
   for(let i=V.parts.length-1;i>=0;i--){const q=V.parts[i];q.x+=q.vx;q.y+=q.vy;q.vy+=q.g;q.vx*=.98;if(--q.life<=0)V.parts.splice(i,1)}
@@ -1972,6 +1999,8 @@ function render(t){
   drawHazards(ctx,R,clockF,t);
   INTRO_FX=null;if(playing&&V.intro){const I=V.intro,land=I.dur*.32,dr=introDrop(V);const W=introWave(V);INTRO_FX={drop:dr,front:W?W.front:-1e9,dark:W?Math.max(0,1-W.u*.85-W.back*.15):1,u:W?W.u:0}}
   if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,INTRO_FX&&INTRO_FX.drop>0?Object.assign({},SPK,{y:SPK.y-INTRO_FX.drop,vy:10,sq:-.2}):SPK,t,R.heat/R.heatMax);
+  // paralysed: three sparks circle over Ember's head until he can move again
+  if(playing&&R.p.stun>0&&!R.p.dead){const ax=SPK.x+11,ay=SPK.y-7;for(let k=0;k<3;k++){const an=t*9+k*2.094;ctx.fillStyle=k?'#fff2b0':'#9fe8ff';ctx.fillRect(ax+Math.cos(an)*13-1.5,ay+Math.sin(an)*4-1.5,3,3)}}
   ctx.restore();
   drawDark(R,env,camX,sx,sy-camY,th,playing,t);
   if(playing){ctx.save();ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);const o=camX*1.35*zoom,W=baseW;ctx.fillStyle='rgba(4,2,1,.9)';
