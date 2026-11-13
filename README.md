@@ -51,8 +51,7 @@ Each world's finale ends with its own celebration and music.
 - **Steel:** collect every piece of coal in a single run.
 - **Gold:** finish within 10% of the Forgemaster's time.
 
-The Forgemaster has cleared every level, and a solver running the game's own physics has proven every level can be cleared, including a route that collects all the coal. Once you clear a level yourself, **Watch the Forgemaster** shows his run.
-
+The Forgemaster has cleared every level, and a solver running the game's own physics has proven every level can be cleared, including a route that collects all the coal.
 ## Files
 
 - `index.html`: the whole game in one file (graphics, physics, generated music, levels).

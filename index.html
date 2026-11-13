@@ -97,7 +97,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 .chip b{color:var(--ash);font-size:17px;margin-right:4px}
 .chip.skull b{color:var(--danger)}
 #hudName{font-family:var(--f-display);font-size:18px;text-shadow:0 2px 0 rgba(0,0,0,.6);padding-left:4px;letter-spacing:.03em}
-#replayTag{background:var(--glow);color:#1a0a04;border-color:var(--glow)}
+
 #heatChip{display:flex;align-items:center;gap:8px}
 #heatBar{width:110px;height:10px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,190,140,.25)}
 #heatFill{height:100%;width:100%;background:linear-gradient(90deg,#d0420c,#ff8a3a,#ffd27a);transform-origin:left center}
@@ -120,6 +120,9 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 #jumpBtn.on{background:radial-gradient(circle at 50% 40%,rgba(255,226,160,.9),rgba(255,106,26,.85));transform:scale(.95)}
 
 /* ---------- Modal / rotate ---------- */
+#crash{position:absolute;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;gap:12px;text-align:center;padding:24px;background:rgba(6,4,3,.93)}
+#crash h3{font-family:var(--f-display);font-weight:400;font-size:26px;letter-spacing:.03em;margin:0;color:var(--glow)}
+#crash p{max-width:36ch;margin:0;font-size:17px;line-height:1.35;color:var(--ash)}
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.66);padding:calc(16px + var(--et,0px)) calc(max(16px,var(--sr,env(safe-area-inset-right,0px))) + var(--ex,0px)) 16px calc(max(16px,var(--sl,env(safe-area-inset-left,0px))) + var(--ex,0px));z-index:20}
 #modal.peek{background:transparent;place-items:center}
 #modal.peek #modalCard{width:min(400px,100%);background:rgba(26,17,13,.9);padding:10px 14px;gap:6px;transition:opacity .15s}
@@ -231,7 +234,7 @@ html.rot #rotate{display:none!important}
   </div>
 
   <div id="hud" hidden>
-    <div class="hud-l"><button class="icon-btn" id="pauseBtn" aria-label="Pause">II</button><span id="hudName"></span><span class="chip" id="replayTag" hidden>Forgemaster</span></div>
+    <div class="hud-l"><button class="icon-btn" id="pauseBtn" aria-label="Pause">II</button><span id="hudName"></span></div>
     <div class="hud-r">
       <span class="chip" id="heatChip">Heat<span id="heatBar"><span id="heatFill" style="display:block"></span></span></span>
       <span class="chip skull"><b id="hudDeaths">0</b>deaths</span>
@@ -274,6 +277,7 @@ const GATE={
   M1c:(L,s)=>{pit(L,s,s+4);P(L,s+2,12,'C');P(L,s+2,9,'*');return[s+5,0]},// the long gap with a crumbling brick in the middle and the coal above it: hop on, jump for the coal, go
   E1f:(L,s)=>{pit(L,s,s+2);F(L,s-5,s+11,10,10,'v');P(L,s,14,'g');P(L,s+2,14,'h');return[s+3,s+11]},// the spike-roof gap with two flame balls in it
   E1f2:(L,s)=>{pit(L,s,s+2);G(L,s+3,2);pit(L,s+5,s+7);F(L,s-5,s+13,10,10,'v');P(L,s,14,'g');P(L,s+2,14,'h');P(L,s+5,14,'g');P(L,s+7,14,'h');return[s+8,s+13]},// two gaps under one spike bar, a staggered pair in each
+  M2f:(L,s)=>{G(L,s,17);for(const d of[0,4,8,12,16])P(L,s+d,12,'X');F(L,s-5,s+23,10,10,'v');return[s+17,s+23]},// five cogs on the floor under the spike bar, evenly spaced: five jumps
   M2q:(L,s)=>{G(L,s,13);for(const d of[0,4,8,12])P(L,s+d,12,'X');F(L,s-5,s+19,10,10,'v');return[s+13,s+19]},// four cogs on the floor under the spike bar: four jumps
   M2t:(L,s)=>{G(L,s,9);P(L,s,12,'X');P(L,s+4,12,'X');P(L,s+8,12,'X');F(L,s-5,s+15,10,10,'v');return[s+9,s+15]},// three cogs on the floor under the spike bar: three jumps
   M2d:(L,s)=>{G(L,s,5);P(L,s,12,'X');P(L,s+4,12,'X');F(L,s-5,s+11,10,10,'v');return[s+5,s+11]},// two cogs on the floor under the spike bar: two jumps
@@ -299,8 +303,9 @@ const SEC={
   movers:(L,x)=>{G(L,x,22);P(L,x+3,12,'O');P(L,x+8,12,'Q');P(L,x+11,12,'O');P(L,x+17,12,'Q');return x+22},
   moversC:(L,x)=>{G(L,x,16);P(L,x+3,12,'O');P(L,x+9,12,'O');F(L,x+1,x+15,9,9,'v');return x+16},
   chim:(L,x)=>{const hw=x+2,sw=x+5;G(L,x,6);F(L,hw,hw,0,10,'B');F(L,sw,sw,4,12,'B');F(L,sw+1,sw+3,4,4,'B');P(L,sw+2,3,'*');pit(L,sw+1,sw+4);return sw+5},
-  chimSaw:(L,x)=>{const hw=x+2,sw=x+5;G(L,x,6);F(L,hw,hw,0,9,'B');F(L,sw,sw,3,12,'B');F(L,sw+1,sw+3,3,3,'B');P(L,hw+1,7,'X');
+  chimSaw:(L,x,coal,noSaw)=>{const hw=x+2,sw=x+6;G(L,x,7);F(L,hw,hw,0,9,'B');F(L,sw,sw,3,12,'B');F(L,sw+1,sw+3,3,3,'B');if(!noSaw)P(L,hw+1,6,'X');// three blocks wide, saw on the left wall: at two wide with the saw a row lower, only 9% of random climbs got past it
     const b=sw+1;pit(L,b,b+18);F(L,b+5,b+6,3,3,'T');F(L,b+8,b+9,3,3,'U');F(L,b+11,b+12,3,3,'T');F(L,b+14,b+15,3,3,'U');return b+19},
+  chimPlates:(L,x)=>SEC.chimSaw(L,x,false,true),// the same chimney and timed plates with no saw inside (2-4)
   chimDesc:(L,x)=>{const hw=x+2,sw=x+5;G(L,x,6);F(L,hw,hw,0,8,'B');F(L,sw,sw,2,12,'B');F(L,sw+1,sw+3,2,2,'B');
     const b=sw+1;pit(L,b,b+23);F(L,b+4,b+5,6,6,'T');F(L,b+8,b+9,9,9,'U');F(L,b+12,b+13,11,11,'T');P(L,b+16,11,'C');P(L,b+19,11,'C');return b+24},
   chim1:(L,x)=>{const hw=x+2,sw=x+4;G(L,x,5);F(L,hw,hw,0,9,'B');F(L,sw,sw,2,12,'B');F(L,sw+1,sw+3,2,2,'B');
@@ -351,6 +356,7 @@ Object.assign(SEC,{
   pistonPit:(L,x,coal)=>{pit(L,x,x+13);for(const d of[2,6,10]){P(L,x+d,13,'P');P(L,x+d+1,13,'P')}if(coal)P(L,x+7,8,'*');return x+14},
   batGap:(L,x,coal)=>{G(L,x,4);pit(L,x+4,x+6);G(L,x+7,4);pit(L,x+11,x+13);G(L,x+14,4);P(L,x+4,9,'y');if(coal)P(L,x+9,9,'*');return x+18},
   slideGap:(L,x,coal)=>{pit(L,x,x+13);F(L,x+1,x+6,11,11,'Z');F(L,x+8,x+13,9,9,'Z');if(coal)P(L,x+7,6,'*');return x+14},
+  spikeRunF:(L,x,coal)=>{const e=SEC.spikeRun(L,x,coal);P(L,x+4,14,'g');P(L,x+14,14,'h');return e},// the same run with a flame ball leaping from the first and the last gap, taking turns (2-4)
   spikeRun:(L,x,coal)=>{G(L,x,3);pit(L,x+3,x+5);F(L,x+6,x+7,13,13,'R');F(L,x+6,x+7,14,14,'#');pit(L,x+8,x+10);F(L,x+11,x+12,13,13,'R');F(L,x+11,x+12,14,14,'#');pit(L,x+13,x+15);G(L,x+16,4);if(coal)P(L,x+9,9,'*');return x+20},
   hopFish:(L,x,coal)=>{G(L,x,2);let y=x+2;for(let k=0;k<4;k++){F(L,y,y,13,13,'.');F(L,y,y,14,14,'V');F(L,y+1,y+1,13-(k%2),14,'#');y+=2}F(L,y,y,13,13,'.');F(L,y,y,14,14,'V');G(L,y+1,3);if(coal)P(L,x+6,9,'*');return y+4},
   ricochet:(L,x,coal)=>{G(L,x,14);F(L,x+3,x+3,8,11,'B');F(L,x+10,x+10,8,11,'B');F(L,x+3,x+10,8,8,'B');P(L,x+6,10,'o');if(coal)P(L,x+8,12,'*');return x+14},
@@ -457,23 +463,23 @@ const LEVELS=[
   build(){return terrain('Vent Ceiling',['sideJet','springsC','H*','!','batGap','springsCO','ladleRun','Hp','E1'])}},
  {id:'w2c',world:1,code:'2-3',heat:1980,fm:2678,name:'Rail Cogs',intro:'A switchback: right, then left, then right. The first drop is a well of ledges with <b>grinders</b> on its walls; the second is a well over lava with grinders on the wall. It ends on one-tile pillars that <b>grinders</b> circle, under the <b>red-hot drone</b>. Cogs on rails keep a fixed beat. Count it once, then go.',
   build(){return stack('Rail Cogs',[['movers','H*','ladlePits'],['!','pistonPit','slideGap','moversC'],['!','M2*','fireGap2','grindPillars']],['ledges','grinder'])}},
- {id:'w2d',world:1,code:'2-4',heat:1800,fm:1778,name:'Saw Chimney',intro:'A saw waits inside this chimney. Climb on the wall away from it.',
-  build(){return terrain('Saw Chimney',['H','chim','hookFloor','spikeRun','M2*','!','chimSaw','Hp','hookPit'])}},
+ {id:'w2d',world:1,code:'2-4',heat:2100,fm:1992,name:'Saw Chimney',intro:'Five saws under a spike roof: short hops. Then climb the chimney wall to wall.',
+  build(){return terrain('Saw Chimney',['H','chim','hookFloor','spikeRunF','M2f*','!','chimPlates','Hp','hookPit'])}},
  {id:'w2e',world:1,code:'2-5',heat:2580,fm:2091,name:'First Beat',intro:'Molten plates are solid for one hammer beat, cold plates for the next. Listen for the hammer.',
   build(){return stack('First Beat',[['timed','jetPair','fireGap2*','!','Hp'],['timed','ricochet','sideLow','X','E2']])}},
  {id:'w2f',world:1,code:'2-6',heat:1560,fm:2430,name:'High Ledges',intro:'Thin ledges you can jump up through. A saw guards the top.',
   build(){return stack('High Ledges',[['ledges','hookPit','batGap'],['!','pistonPit','X','hopFish'],['!','ledges','ladleRun','M3*','H']])}},
- {id:'w2g',world:1,code:'2-7',heat:1380,fm:1752,name:'Anvil Row',intro:'Anvils overhead and under the ladle.',
+ {id:'w2g',world:1,code:'2-7',heat:1380,fm:1746,name:'Anvil Row',intro:'Anvils overhead and under the ladle.',
   build(){return terrain('Anvil Row',['hookFloor','fireGap','!','hookPit','spikeRun','ladleRun','hookPit*','!','hookFloor','sideJet','batGap','E2'])}},
  {id:'w2h',world:1,code:'2-8',heat:1860,fm:2504,name:'Piston Works',intro:'Ride the pistons between the vents.',
   build(){return stack('Piston Works',[['springs','pistonPit','!','ventCog*'],['slideGap','pistonPit','sideJet','!'],['ladlePits','ricochet2','pistonPit','M2']])}},
  {id:'w2i',world:1,code:'2-9',heat:1920,fm:2295,name:'Side Furnace',intro:'Side jets on the hammer beat.',
   build(){return terrain('Side Furnace',['sideJet','timed','!','sideLow*','ventBeat','hopFish','spikeRun','!','timed','batGap','sideJet','pistonPit','E1'])}},
- {id:'f2',world:1,code:'2-10',finale:true,heat:2760,fm:5690,name:'Bellows',intro:'The World 2 finale. Vents, cogs and the hammer beat, now together.',
+ {id:'f2',world:1,code:'2-10',finale:true,heat:2760,fm:5660,name:'Bellows',intro:'The World 2 finale. Vents, cogs and the hammer beat, now together.',
   build(){return stack('Bellows',[['springsC','H','ventCog*','Hp','batGap'],['!','ventBeat*','sideJet','chimSaw','slideGap','pistonPit'],['!','cogLedges*','hookPit','ricochet2','springsCO','spikeRun'],['!','X','ladlePits','ventCog','fireGap2','hopFish','batGap','H','E1']])}},
- {id:'f3',world:2,code:'3-1',finale:true,heat:4920,fm:5523,name:'Trip Hammer',intro:'Molten plates are solid for one hammer beat and cold plates for the next. They flicker before they drop.',
+ {id:'f3',world:2,code:'3-1',finale:true,heat:4920,fm:5482,name:'Trip Hammer',intro:'Molten plates are solid for one hammer beat and cold plates for the next. They flicker before they drop.',
   build(){return terrain('Trip Hammer',['timed','X','Hp','H','moversC','trapGap','!-','balloonRun','chimSaw','X','X','H','lavaBiters','!','Hp','timed','Xp','pistonPit','Hp','vent','!','X','chimDesc','lavaBiters','fireGap2','Hp','H','M2'])}},
- {id:'f4',world:3,code:'4-1',finale:true,heat:3360,fm:4501,name:'Quench',intro:'Oil keeps you sliding. Spikes overhead mean short taps only. Two braziers for the whole run.',
+ {id:'f4',world:3,code:'4-1',finale:true,heat:3360,fm:4505,name:'Quench',intro:'Oil keeps you sliding. Spikes overhead mean short taps only. Two braziers for the whole run.',
   build(){return terrain('Quench',['oil','X','X','Hp','Xp','!','huntRun','chimDesc','Y','X','Hp','H','!','oilCogs','hookPit','pistonPit','Xp','X','Hp','sideJet','fireGap2','springsCO','Y'])}},
  {id:'f5',world:4,code:'5-1',finale:true,heat:3480,fm:5022,name:'Crucible',intro:'Two braziers. The tightest jumps in the foundry, back to back, with heat to spare for almost nothing.',
   build(){return terrain('Crucible',['hops','chim1','X','Xp','trapGap','Hp','X','!','huntRun','oilCogs','Z','singles','X','Hp','!','lavaBiters','Y','Xp','pistonPit','vent','ladlePits','fireGap2','X','Hp','X'])}},
@@ -674,7 +680,10 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
     else if(h.st===2){h.vy=Math.min(12,h.vy+.55);h.y+=h.vy;if(hit(hx,hy,hw,hh,h.x-14,h.y-15,28,30))return die(R,'anvil');
       const tx=Math.floor(h.x/TS),ty=Math.floor((h.y+16)/TS),sol=solidAt(R,tx,ty),lava=(tileAt(R,tx,ty)==='^'||tileAt(R,tx,ty)==='~')&&ty<R.rows;
       if(sol||lava||ty>=R.rows-1){const ly=(sol||lava)?ty-1:R.rows-2;h.st=3;h.t=120;h.y=ly*TS+16;h.idx=ly*R.w+tx;R.grid[h.idx]='n';R.hzN.add(h.idx);ev('clang',h.x,h.y+16);
-        if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil')}}
+        if(hit(hx,hy,hw,hh,tx*TS,ly*TS,TS,TS))return die(R,'anvil');
+        // a graze (the outer 2 px of Ember, which never kill) must not leave him inside the new block: slide him out the nearest side
+        const bx=tx*TS,by=ly*TS;if(hit(p.x,p.y,p.w,p.h,bx,by,TS,TS)){const oL=p.x+p.w-bx,oR=bx+TS-p.x,oT=p.y+p.h-by,oB=by+TS-p.y,m=Math.min(oL,oR,oT,oB);
+          if(m===oL)p.x=bx-p.w;else if(m===oR)p.x=bx+TS;else if(m===oT)p.y=by-p.h;else p.y=by+TS}}}
     else if(h.st===3){if(--h.t<=0){h.st=4;h.t=24;ev('creak',h.x,h.y)}}
     else if(h.st===4){if(--h.t<=0){h.st=5;R.grid[h.idx]='.';ev('lift',h.x,h.y)}}
     else if(h.st===5){h.y-=2.5;if(h.y<=h.home){h.y=h.home;h.st=6;h.t=45;h.idx=-1;h.vy=0}}
@@ -705,19 +714,16 @@ function hzStep(R,p,hx,hy,hw,hh){const hz=R.hz,c=R.clock,pcx=p.x+p.w/2,ev=(k,x,y
   return null}
 const ACTS=[[-1,0],[-1,1],[0,0],[0,1],[1,0],[1,1]];
 /*ENGINE-END*/
-/*PROOF-START*/
-const PROOF={"k":3,"f1":"5fdfec2ec2fd3fecf2d4f2e2fd2ab3e2f2ec2ec2feba2cadf3ec2e2fec2ecefd5ec2fc5e5fdfec2eaebab6fceab3e2c4ec2fc2ec2ef2ec2ecfec4efce2bdcf5ecfec4efd2fdfe2cefadab3a3c2ecefd5fcad4fd2ecefd2fd2f3ecefd4fec2ec2fd4fec2ec5fdfec2ec3efcec2e5fdfec2ece4fc2e2c3e2fecefbdbfebab4adebab2a3c2ec2e3fd2fc2ece4fd2fc5ec2ecefd5fcefd4fec2ec2fd4fec2ec3efec2ecefcd3aecf4ecefc5ef4ecefd4fec2fd2fdf2e2fd2bdbc4efec2ecefceacbcf3ec2ef4ecefc5ef4ecefc5e5fd2ecebf2bef2efd2ecf2dbfebab4acfbab2a3cec3ab5f4ec2ec3e2fd2fdfec2e3fd2fc4efd2fd2fc5ecefd4fec2ead5fd2ec2e3fd2fd5e5fd2e5fdfeb2a5fceacdf5ecfec2ecedab4de2fcec2acbf3ec2e2fec2ec2e3fd2fd2e3d3fec2fdba2cbad5fdb3ecefd2fdf3eaeababc2a2cbc2a4ec6efec4efcacba2f3ec2ef4ecefc2ec2ef2ec2ecf4ec2ec2e3fd2fa4e5fdfec2ec4efda2c3e2fecefbdbfebab4acf2ab2a3cec2a2b5f4ec2ec3e2fd2fdfec3e2fd2fde3acd4fdfec3e2fd2fdfec3e2fd2fd5eceb2a3c2ec2e3fd2acabab2a3c2ecefd5f2e2fd2f3ecefc2ec2ef2ec2ecf4ecefc2ec2ef2ec2ece4fd2fced4fd2eacf2a3cec2ec2fd3f2ec2ec2e3fd2fdec2ae4fdfec2ec5fdfec3e2fd2fdfec4efd2fd2f3ecefda","f2":"5a17ec2ef2d6ea3fd2fcebda5ec2ec5e2cec2ec5ec2ecbcd2a4c2ec2ec5ec2ec2ec3ea2e3d11ea3fd2fc2eacb3fdf4ec10ea12e5a6fc2ec3eadbd2bf2b4f3e3aead5fdf4ec2ece3abac2bab2a3c2ec2ec5ec2ec5ecea2fd3fecf4ec10ea4fdfec3efec2ec11ea6fc2ec2ec4fec2ec4efc2ec2ea2fdf4ebd2ed13ea4fdfec3e2fdfec2ec10e5a3e2ae3c11a6b2a2b11ab15a3ea6baecd11a7b5abfcecefef2a3c14a3b14a6b2a4b14ad4ea2c14a2ba3bacfcfe2abab3aec3b7a3b6a3b6ab3ede3b6a4b10abab2a2c9a4eca3b4abe4aec3a5ba41c4a6ba4c6b16ac2ea6b4a6b3af2cd3b6aceab8a6b6a2b15ac5e3ace3c2a9ea4fdfec2e2c3d3fecf2df11eaf2ec12eb3af4dea4fdfec5fdfec5fdfec2fdeacabad5fd2e3fd2fc2ecef3ec11e3acafea3c3eb2d6eaf2d3fec3fd3abacb2a3c2e2acef2ec6ea3d3fec5fdfe4c16e4f2dacaecfefefc14ec5a5fd2aebcb2a3cbab5ec5ec2ecdcf2a2c3ec2ec5ec2ec2ec4ea2ea5fd2ec2ece4fd2fc4efd2fdfec8efec2ecea10ea3fd2fc4efc2ec10ece6a5e19a6b2a4b12a6b5a7b3a3b17ab4aeca2b18ab6ab6ab16a3b6a3b2a2fefef2a3c16aef2e2a6b2aef14adef14acfe13a4ea6b3a4b7abf8a6b9ab3a4e3a2b7aca6b5a3b5aca3b12a4baecfefd2a3c13ab6a6b5a4b16a3b2dfecebcd6b18a6b2ab16abef2edab6ab6ab17a6b23a","f3":"5fdfec2ec2fd3fecfd4fd2eba2fd2fd2ece2b3dbacf2e3fd2febd2fabfa2dabab2a3c2eaba2fc2ab2ab2a3c2e2bc6fc2ec2fd4fecefd5ecfec2eced3adc2e2fc2ec2e2f3ec2e2fec2ecefd5ec2fc2ec2e3fdbabfec4e2fd2fc2ec2e3fdfec4efd2fd2ec3e2fd2fc5e5fd2efd4fd4efd2fdfec3e2fd2fdf4ec2fd2fdf4ec2fd3f2ec2ec2ec5fc2ec2e3fdfec2ece4fd2ec3e2fd2fc2ec2e3fdf2b2d2bfa6fd2ec2e3fd2fce4fd2fc2ece4fd2fce4fdfec2fd4fec2ec5fdfec2ec5fd2ec2e3fd2fd2ec2e3fd2fd4e6c4efd2fbdbafc3ae2cbad2ab2ab3ae2c3eb2a4ec5e3f2eabca2e2fd5eceba2b3f2e3fbadcab2a2caca2ca2f2c3abc2a3cbabcb2a4c2ec2ec2ecebcb3d3fec3fb2ac3e2f2ec2ec2febcb2afeaca3efd2ec3efec2ecefc5ef4ecefc5e5fd2e3fdb2adf2e2fec2ece2feabdbd2e2fec2ecef3ec2ef4ecefc5ef4ecefd4fec2fd2fdf4e5fd2ec2e2d2fd2f3ecefd2fd2f3ecefd4fec2ecbdab3a3cecefba3ecefdfdcababab2a3cec2ecef2d3fecfd4fd4efda3ecefd5fc2ec3e2fd2fc2ec2e3f4adc5f3ec2e5fc2ec2e3fdfec4efd2fdfea2eabacb3fcdac2ab2a3cecea5c2ef4eca2f2dababcb3a2c3e7a8efec2eca4eca4ecb2a4ec3ef2d3feca2fbd2b2c3e2f2ec2ecf2ea2b2e2fc2ec2e2fec2ece2f2ec2ec2fc5e2f3ec2ef2d4fce5fd2eacf2a3ce2c2b3fd2fc2e3fd2fd2eceacb6fec2e3f3b2da6e2fd2f3ec2e3fdfec2ecefd3f2ec2ec5fc2ec2e3fd2fc2ecb2ad2a3c2ec2ece2c4ec2fd2f3bd5e3fd2fc2ec2ec2e3fd2fc3e2fc2ec2e3fd2fd2ec4efd2ec2ecf4ec3e2fc2ec2e2f3ec2e2fec2ecefd5ec2fd2fdf4ec2fd3f2ec2af2dbfeb2ab3acf2abababab2acdf3ec2fc2edf3ecd2be4fdfe2c2d2bab2a2c3eac2ab2a4c2ecefd5fc2ec2e3fd2fd2ef2d4fcefd2fdfec2e3fd2fd5e5fd2ec2ec5fd2ecac2abc2a3c4ec2fd3fecfd4fd4efd2fd2ec3ef2bcbad2ea4fd2ec3e2fd2fc5e5fc2ec2e3fd2fcef2d4f2e2fd4fec2ec2f2d2bae2c2d4fdfec2ec2fd4fec2ec5fd2ec2ec3efec2ecef2ec2abf6ef4ecefc5e5fd2ec2ec3e2fd2fd5e5fc","f4":"5fdfec2ec2e3d6e3d6eafec2ecef2c3bcf5ecfcecabaf6efcec3af6efce3ac3f2ec2ec10ef4ec2edf4ec13eaf5ecfec10e3d6e3d3ea3f2d2bdf2efd5ec5ec2fc2ec3eaf3ec2ef4ec12ea2fd3f2ec2ec13ea4fdfec2ec5fdfec2ec10ea2fd2fd2eb4fdf16eaf3a2ca2e2fec2ecefd2ec13efec2ece4fdfec10ed5fc2ecefd2f3ec2ec9ea3fd2fc2ece4fdfec7ef2ec3ea6fc2ec3efec2ec6ea6fc2ecefd5ec2ec6e2af2dbfebab4adebab2a2ce2f2ecefd2ecf4ec2ec2ece4fd2fc5ec2fd2fd3ecad2fd2e2cade2a3c3e4a6fecef2d13ec2fdfbdabefe5fc2ec12e3fd2fc2ecef3ec2ec2ec6eaf5ecf3adc2efd2ec2ec12eaf4ecefc15ec3ea6fc2ece4fdfec9efd2fdfec3efec2ec3ef2d6e3d3ea3fd2fc4efd2fceadab5f2ec2ec2ea2fd3f2ec2e3fd2ec8eaf5ec9ec2af3ec2efedbabaf6efc2e2caf2ec3ed2ec3ed2ec3eced2ec3ec2ea3fd2fced4ad2ac4a4c6ed2ec3ea2e3d6edf3ecea3fd2fc2ece4fd2fc2e3fd2ec2ec3efec2ecea2fdfacbaf2ec2efec2ec7e2fec2ec3efec2ecefc19efd4fecfd4fd16eaf3afac2e2f2ec2ecfec19eaf2ec2ec5fced2a12ea2fbdbdb2cbed6fc2ecefd5ec10e2fd3f2e5fdfec13ea6fec5fdfec2ec2f3ead2ab2a4c3ea6ecab2a6f3ec2ec5ece2bfb4ec2ec2ec5ec2ec5ec2ec2ec2e4a6fc2ec2ec12ea2fd3f2ec2e3fd2ec2ec9ec4fdfec2ece3fec2ec9ea","f5":"5fdfec2ec2fd3fecfd4fd2eba2fd2f2ca2df6ef2ec2ecfec2ecef3ec2ec5fdfec2ec2e4fbdcbab2a2cbab2a2cbab2acdfecefd2ec4efd2fd2f3ec2ec2ec2e3fd2fcefd4fd4efc2ec2ef2ec2ec2edf4ecefc2ec2ef2ec2ecf4ecefc2ec2e3fd2fcef2d4f2e2fd3a3e2f2ec2ec2febacac2e2fc2ec2ef2ec2ecf4ecefc2ec2ef2ec2ec5fdcbedfd2bdefbdbf3babcb2a3c2ec2e3fdfc2ac3ec2fd2f3ec2e2dbaca2cd4fd2ec3e2fd2fc5e5fc2ec2e3fd2fcefd4fd4efc2ec2ef2ec2ec2edf4ecefc2ec2ef2ec2ecf4ecefc2ec2e3fd2fc5ec2fa4ec2fd4fec2fd2fd5e5fdfdcabab2a3cec2e5fdfeabeb3a2c3ecefd5fcdbcb3a3c2ecefd2fd2f3ecefd3fabcb4ed3ec2ed2e2a2cfca2cdaf4ecefc2ec2efeba2cefcacdcef2cacecf5ecf3ec2ed3ec2ef2d3fecf2d4f2e2fd4b2f3efec4efcedb2ae2ab2a3c4ef4ecefc5ef4ecefc2ec2e3fd2f2cec3abe2a3cabab2a3c2ec2ec5ec2ec5ec2ec5ec2ecefd3f2ec2eb3fdfec3ec4b3f2edef2a3c2ec5ecf2d3fec3fb2ac3e2f2ec2ec2febdabafeada3efd2ec3efec2ecefc5ef4ecefc5e5fd2ec2ece4fd2ec3efbd3aea6fc2ec2e3fdfec2ecefd3f2ec2ec5fd2ec2ecefa2ecefd2fd2f2efd2fcd2adab2a2c3ec2fd4fe2cbcb2a3c5e2fd4f2e7fc2e5fc2ec2ef2a2cbeacae4fd2ec3e2fd2fc2ec2e3fdfec4efd2fdfece2caf2ef4ecefc2e2aba2fbfe2f3ec2e2fec2ecefd5ec2fc2ec2e2fec2ece4fd2fc2ec2e3fd2fd2e3fd2fd2ec4efd2fdf4ecf2d3fecfd4fd2eba2fd2fd2ec2ec2e2c4ec5f2b2c3e2fd2fd2ec2ec3e2fd2fd2ec2a4d3fec2ec2fd2fbacabe7fc2ecefd5fc2ec2e2c4fd2fc2ece2fd3fec3fb2ad3e2f2ec2ec2feacbab2eaeab3a3c2ecefd5ec2fc2ec2e2fec2ece4fd2fc2ec2e3fdfec4efdfbc2ada4fdfec4efd2fd2ec3e2fd2fc5e5fd2ef2d4f2e2fd3a3e2f2ec2ec2fe2acbc2e2fc5ef4ecefc2ec2ef2ec2ecf4ecefd2fdf4ec2ec2e3fd2fc2ecefc","w1a":"5fdfec2ec5fd2ec2e3fd2f2d2cabd4fdfec3e2fd2fd5e5fdfec2e3fd2fcacab3a3c2ec2e3fd2fc5e5fc2ec2e3fdb2a4ef2ec2ecfecdbaef3ec2ef4ecefc5ef4ecefd5ec2fd2fdf4ecfd3ababe2a3cec3e2fd2fd5e5fdfec2ec5fdfecea","w1b":"5fdfec2ec5fd2ec2e3f2acabaf2a2c3ec2e3fd2fc2ece4fd2fc2ece4fd2fc2ad2a4c2ec2ec5ec2ec5ec2ec2ec5ec2ec2e3fd2fd2ec2e3f2d2ba4ef2ec2ecf2ed3ae2f5ec2fc5e2f3ec2e2fec2ecefd2fd2f3ecedfd3f2ec2e3fd2fd2ecefd4fec2ecd3fd2fc4efd2fd2fc4efd2fd2f3ecefd2fd2f3ecefd4feceacb4fdf4ec2fd3fbac3ef2ec2ecfe3aced5ecfec4efc2ec2e2fec2ecefd5fc2ecefda","w1c":"5fdfec2ecf4ecefc2ec2ef2ec2ecf4ecefc5ef4ecefc2ec2e3fd2beaebab2a3cb2adf3ec2ef4ecefc2ec2ef2ec2ece4fd2fc2ece4fdfec3e2fc2ec2efecbacaf4ecef3ec2ef2ec2ec2fd2f3a3efc2ec2ef3e3aefec2ecefc5ef4ecefc2ec2e2fec2ecef3ecefc2ec2ef2ec2ecf4ecefc2ec2ef2ec2ecf4ecefd2fdf4ec2fdfa","w1d":"5fdfec2ec5fd2ecefd5fc2ece4fdfec3e2fd2fdfec4efd2fdf4ec2fd2fdf4ec2fdcabcdcb2a3c4ec2fd3f2ec2e3fd2fd2ec2e3fdfa2ec2e3fd2fc4ef2a3cbab5ec2ec5ecdcf2a2c3ec2ec2ec5ec2ec4efd2fd2fc4efd2fd2f3ecefd2f2d2afcad4fdfec2ec2fd4fec2ec5fd2ecdab2a3c2acb2a3c2ec2e5fdfec2eafd2fdfec2ece4fd2fc4efd2fdfec3e2fd2fdf4ec2fd2fdf4ec2fd3f2ec2e5fda","w1e":"5fdfec2ec2fd3fecf2d4f2e2fd4fec2ec2f2d2baed2cd4fdfec2ec2fd4fec2ec5fd2ec2ec3efecefc3f2dcb2ab2ab2ab2a3c2eca3fd2fc5ec2ecefd5fc2ece4fd2fcefd4fc3a2f2dabaebad2a3c2ec2e3fd2fcea2c2efd2ec3e2fc2ec2e2fec2ecefd5ec2fd4fec2ec2e3fb3db3f2e2fece2f4dcb2ab2ab2ab2a3c2eca3fd2fc5ec2ec10ea2fd2fd2ec2ef2d4f2ef2d4fcefd2fdfec3e2fd2fdf4ec2ef4ed2fc2ebecfcbdf2efc2ec2ef2ec2ecfec2ecef3ec2e3fd2fc2ec2ece4fd2f2ca2b6fec2ec5fdfec3e2fd2fdfec4efdfec12ea","w1f":"5fdfec2ec2fd3fecf2d4f2e2fd4f2bdecd5fc2ece2f2ec2ec2fd3f2ec2e3fd2fd2ec2e3fd2fd2ec2e3fdfec2ae2abab2a3c2ec2e2fd3fec5fdfec2ec3fbdbacecad6fc2ecefd5fc2ecefd4fec2fd4f2e2fd3faec2e5fdfec4e2cafbfbac3ad3a3cec2e3fd2fd2ec2e3f2dba2ca7fd2e3fd2fd2e3fd2fcefd2fd2f3ecefd2f3a3efc2ecefd5fc2ec2ec2e3fd2fd5e5fbcacac4fd2fc2ecefd5fce5fd2eacd4fdfec2ec2fd3f2e2ca2efec2ecf4ecefc5ef4ecefc2ec2ef2ec2ecf4ecefd2fdf4ec2ec5fde3aeb6fec2ec2fd4fec2ec5fd2ec2ec5fdfec3e2fd2fda","w2a":"5fdfec2ec2fd3fec5fdfec2ec4febcabcb2a3cec2ec5fd2ec2e3fd2fd2ed6f3cb2a3c2acab2a3c4ec2ec2ec5ec2ec5ec2ec2ec5ecefd4fec2ec2ecb2a6ec2eb2a4ec5fdfec2eafd2fdfec2ecef2d4fcef2d3fec5fdfec2ec2f3ec2ec6ea6fc2ecefd5fc2ec5ec2ec2ec5ec2ec5ec2ec2e2ce2af2a3cec4efd2fdf2e2fd2fbacbcfe4fdfebcbaf2d4f2e2fd4fec2ec2ec5fdfec3e2fdf2bacdc2d4fdfec2ec2fd4fec2ec5fd2e5fdfec2ef2ec2ecf4e2ad5ecfec2ecefc5e5fd2ec5e4fec2ec9ea","w2b":"5fdfec2ec2fd3fecf2d4f2ec4fdfec8e6c3d3fec5fdfec2ec3eae5fd2eac6ec2ec2ece2af3ec2ec5ecdcd3a3c2ec2ec5ec2ec2ec4ea2fb3feca5fd2ecefd2fd2f3ecefd4fec2ec2fd4fec2ec5fdfec2ec2ea2ea2fd2fd2ec2efbd4f2e2fd4fec2ea3fd2ec3e2fd2fdf2aeba3fd2f3ecec2fd2fd5e5fdfec2ec5ec2ec5e4cb2a3c2ec2ec5ec2ec2ec4e2a6fe2c3d3fec5fdfec2ecafbd2fd5e5fdfec2eca6facad5e2fd2fd4ecb3fd2fc4ea3fd2fc2ece4fd2fc4eaf2d3fec3fb2ac3e2f2ec2ec2feabcb2de2f2ec2ecaf2ec2ecf4ecefc5e5fd2ec2ec2ea2f3ec10ea","w2c":"11ea2fb3fecf2d4f2e2fd5ecbf3ec4eaf2d2bcd4e4fdfbaebab3f5ec10ea2fd2fd2ec2ef2ec2ec10ea2f2dbdab2ead4fdfec2ec12ea5fd2e3fdfeceacad2ac4a6ea5fd2ec2e3fd2ec2ec5ec3ec2fd3f2ec2ec2ec3eac2a3bdfd3fdc3b3dbc4ab9aec5ec2e11a5eca6c4e2c18a6b2a4b12ab15aef7a6b5a5b11ab2a3ea6b2abe2cdc3d5a23c4a6ba45c4a6ba4c3bc2ede4b11a3b9ab3a2ea5b3ae2cdadceca2b11a5b20a6b10acaefae2ac7ace2cdce2fc2e2fec10efec2e2c6fecfd11ea3fd2fc2ecefc5ec9efc2ebcabeca2ced4ec15ec5fd2e2f3ec2ab2a3c2ecea5e2c2a5f2bcd4fdf3edae3fd2fc2adc2a2c3ec7ec3ea4fdfec2ec10ea","w2d":"5fdfec2ec2fd3fecfd4fd4efd2fdfec3e2fd2fdf4ec2fd2fdf4ec2fd3f2ec2ec2e2f3c4efd2ecf2dbfe2bab3adebab2a3c2ec2e3fd2fc2ec5ecefd5fc2ecefd5fc2ece4fdfec2eaf2d4f2e7fc2e5f2c2bdab2a3c4e5fdfec2ec5fdfec3e2fd2fd2ec2ef2d4f2e7fc2e2f3ec2ef3eac2acf5ecfec2ecef3ec2e3fdfec2ec2ec5ea2fd2fd5e5fdfcaceac3e2fd2fca2e3becadad3adebab3acfab3a3c2fdf4e4fec2ec2fbd3abc2a3cdab2ad2a3c2ece4fc2ec2ec5e2c3d3fecf2d4f2e2fd2f3ec2e3fdcacabc5f2ec2ec2fd2f3ec2e3fdfec2ecefd4fea2eabae2fdfbd2bfdcae4fdfec3e2fd2fdf4ec16ea","w2e":"2a6fc2ece4fd2fce4fdeab3a6fc2ec2fdbaeab2ab2a3c2e2bcfda2dabad2a3c2ebadfda2cb2ab2a3ce2c2a6fec2ea2fd2fd5ecd3b2f5e5fdbcad2a2fedcb2ab2a3c4ec2fd3f2e2c3abab2a3c4e5fdfcb3d11ea3fd2fc2ecef2d4f2e2fd4fec2ea3fbd2bdfa2d4fdfec3e2fd2fdf4ea3fd2fc2ecefd5fc2ec5ecea14ec5a3ecaea2c6b5a7b2a7b4a6b5a2bfcf3ecf2a3c2afdca6b6ab2ab6a7b7a2b3a2cacbababa7b6abababa6b2aece7b2a5b6a5b4a7b2adfcd6b3a2bf2ec3a2b6a2baefedc2a2b6ab6ab6ab6ab6a6b2a7b2a7b5a5bed3fe6b2adefd6b5a7b4ae6b16a","w2f":"5fdfec2ec5fd2eafd2fdfec5fdfec2fd2fbabead3fd2fd2e3fd2fd2ec2ef2ec2ec2fd3f2ec2ec4eafbabcabab2a3c2e2ac4fdfec2ec3d4f2e7fc2e5fdfecaba7fec2ea3fd2fcb3af2a3c2ec2e3fd2fc2ece4fd2fc2ec18e14a6b2a7b4a6b5a7bed2a3ea6ba6b5a7b6a6b5a7b4ab6ab6ab2ec2fb2a2b6ab6ab6ab6ab6a6b9a6b3acecf5b5a7b6a6b5a3b15a3e2ab3a3c2ec5ec2eca3d3fecfd4fd4efd2fdfec3e2fd2fdf4ecefd2f3becda6fd2e5fdfec5fd2e3fd2fd2ec2e3f2db2a3efd5fc2ec5eca5fd2ec2e3fd2fd2ec2e3fd2fd2ec2e3fd2fcecac2eaf2ec2ecfece2acf4ecefc5ef4ecefc2ec2ef2ec2ec2fd3fec5fdfec2eca4f2bdbaded6fc2ecefd5fc2ecefd4fec2ec2e3fc2ec10e","w1ab":"6e3d11ea3fd2fc2aca2f9e3d6ea5fd2eade2a3cb2ab6f2ecdaf2a2c3ec7ec7eb2a3cdce6fc2ec4efc2ec3ed3a3cdab2a3c2ec2ece4fd2fc2e3fd2fd2ec8e3d6e3d6ea2fb2fd2ec2e3fd2bdbcdbaf2a3c2ec5ec2aba4e2fd2fdfbacd2a3c4ec2ec5ec2ec5ec2ec2ec5ec2e3a3fd2fcef2df8eb5fec2ec3fd2ada4e2fe2a4de2fe2a3e2fecdbdbef2ec2ec14efd2fdf4ec2ec2ed6e3d3ea3fd2fc2ea5f2dacad2a2cb2aedaf2a3c3ec2fc5ecef2d6e3d3ea3fd2fc12ef2ec2ecfd2fdf2ebdc4e2fd2fc5e5fd2ec2eb2d4f8efc8ead4ecefceac2adebadfcf10edece3af2ec2ecf4ec15e3a5fd2ece5f2ec5edf3ec4ea5fc2ec2e3fd2ececab2ab3a3c2ecea6fc2ec2ec8ea","w1cd":"6e3d11eaf2adbdcef3eaecf4e3acb2a3c2eceaf2ec14e3d6eaf2d3fec5fc2ecefc5ef4ecefc9efc2ec2eafd2fdfec2ec4edf3ec3ec2acd2cdeafdb2d2f2ab2a2c2efd2fdfec5ec3e3d6eaf2ecacbaecdcf3ec2ef2e3acf5ecfecacabf4ecefceac2af4ec7eafec2ece2f2ec2ecf2d9ecfec4a6f2ec2e4cbdf4ec4eb2d3ea3fd2fce4fd2f2cad3a3c2ecefd2fd2f3ecea9ec2eca2fd4fec2ea3fc2ec3e4aca3ef4ece5ac3e2a3c8a2b7a6b2a7baced2b13a2ea6b27ac25a2ea6b2a7b6a5b6a6b2a4b9a5bfecf4afb10a3e4ca6b4a7bad2efe3a2cfe2d4b10a3b7a6b2a3b3ecefe2a3c6ad2e2c2ef2a3ca3ea6b10ab2a2ecd6a6b18a","w1g":"5fdfec2ec2fd3fec5fdfec2ec5fdfec4efd2ec2ecf4e2af3ec2ef4ecefc5ef4ecefc2ec2e2fd3fecfd4fd2e2b2fd2fd2ec2e7f2e2fd3faec2e5fdfec5eceada3bab2a3c2ec2e3fadbdbab2a3c2ec2e5fd2cdcacab2a3cabab2a3c2ec2e3fd2fc4efd2fd2fc3e5fd2ebcf2a3cec2ec2fd3fecfd4fd4efc2ec2ef2ece2ad3ec2ef2ec2ecf4ecefd2ec3e2fd2fdf4eaece4fd2fc5e5fdfeceb3a3c5ec2ec5ec2ec2ec5ec2ec5ec2ecf2d3fec5fdfec2ec5fdfecf2d3fec5fc2ecefc5ef4ecefc5ef4ec2e5fdfec5ec2fd4fe2cba6fec2ec5fdfec2ec5fdfec4efd2fd2fc4efde","w1h":"5fdfec2ec2fd3fec5fc2ecefc5ef4ecefc5ef4ec2e5fdfea3d3fec2fdbacdabc5fdb3ecefd2fdf4ec2ecea6fc2ecefbd4f2ef2d4fcef2d3b2c3e2fc5ef2e2ba2f2ec2ecf4ecefc5ef4ecefc2ec2e2fd3fec5fc2ecefc5ef4ecefc5ef4ec2e5fdfecdabc2b2a3c2ec2e3fd2fcea2c2efc2ecef3ec2ef4ecefc5ef4ecefc5ef4ecefbd3fecfd4fd4efda3ecefd5fc2ec2e3fd2fdebac2fd2fde2adab2a3c4ec2fd3f2ecefd5fc2e5fdfec3e2fd2fdfa3ceab2a3c3adf5ecfec4efc2ec2ef2ec2ecefd5fc2ec2e3fd2fd2e2cad3fd2fc4efd2fdfec3e2fd2fdf4ec2ec2fd3f2ec2e3fda","w1i":"5fdfec2ec2fd3fec5fdfec2ec5ec2ec4e2ad2a3cec2ec5ec2ec2ec5ec2fd3fecfd4fd2eba2fd2fd2ec2e3fd2fd2ec3eae2fd3f2ec2e3fd2fd2ec2ec5eaec3efec2ecef3ec2ef4ecefcd3aef3ec2ef2ec2ec2fd2fd5ec2e3fbcbc3af2a2c3ec2e2fd3fec5fdfec2ec5ec2ec4ebad2a3cec2ec5ec2ec2ec5ec2fd3f2ec2e2cec2fd3f2ece2c3d3fecf2d4f2e2fd4fec2ec2fd3fab2abe2a3c2ec2e5fd2ec2ec5ec2ec4efd2ec2ec2f3ec2e2fec2ecefd2ec3e2fc2ec2e3fd2fd2ec5e5fdfecedb3a3c2ece4fd2fc2ece4fdfec5ec2fd2fdf4ecfa","w1j":"5fdfec2ec5f2d2a4efd3efbdbfe2bab3acfab3a3c2ec2e3fd2fc2ece4fd2fc5ec2ecefd2feabdbab2a3cec2ec5fd2ec2eca5fdfec3e3d3fecf2d4f2e2fd2f3ecefc2ec2ef2ec2ecf4ecefc2ec2ef2ec2ece4fd2fce3d3fec2fdbadc2bc5fdb3ecefd2fdf2e2d2fd2b3f2e2f3ecf2dbfe2bab3acfab3a3c2ec2e3fd2fc2ece4fd2fc5ec2ecefd5fcefd3faec2ec2fd3f2ec2ece2c3fd2fc4efd2f2acabab2a3c2ec2e2fd3fecfd4fd2eba2fd2fcdacdf6ef4ecefabcbacf3ec2ef2ec2ecfec5e5fdfecbcdad2a3c5e2fd4fce5fd2ecefd2fd2f3ecefd4fec2ec2fd4fec2ec5fdfec2ec3e2fd2fdf4ec2fda","w1k":"5fdfec2ec2fd3fecfd4fd4efd2fdfec3e2fd2fd3b3e4fd2fc2eacd3fdfec2ead3fd2fc4efd2fd2fce4fdfec2ecedbd2bac2ab3a3cec3e2fd2fdf4e2cfd2fd2fc4efd2fdf2db2dfbfe2f2ec2fdbfebab4acfbab2a3c3ac3fd2fd2ec5ec2e2f2bacf2cbebecab2a3c2ec2e2fd4fcefd2fdfec3e2fd2fdf2e2fd2fda3ec5fdfec4febdacab2a3cb2abf5ecfeabcbcf2ec2ecfec2e2ad2edcadf2ec3efec2ec2e3fd2fd2ec4efd2fd2f3ecefd2fd2f3e2ad5fc2ecefd2f2ac3e4fd2fc2ece4fdcbfb3dc5fdfec3e2fdf2acabad2a3c2ec2e2fd3fecfd4fd4efc2ec2ef2ec2ecfec4efc2ec2ef2ec2ecfec4efc2ec2e3fd2fc2ec5ec2fd2fd4ea","w2g":"5fdfec2ec2fd3fecf2d4f2e2fd4fec2ec2fd3f2ec2e3fd2fd2ec2e2fd4fcefd2fdfec3e2fdfec9ea3fd2fc2ece4f2dabecdeab3ac4aeca7fc2ece4fdfec5ec2fd2fdf4ec2fd2fdbadabe2a3c2ec2e5fd2ec2e3fd2fd2ec2e3d4fcef2d3fec5fdfec2ec5fdfec3e2fd2fd2ec2e3fd2fc2ebcbabad2ac3acae2c5fd2ec2e3fd2fd2efbd11ed3fdfec3e2fd2fdfec5e5fd2ec2e3fd2fd2ec2e3fd2fd5ec2f2d2baeaf9ef2d3fec5fdfec2ec3e2fd2fdf4ec2fd2fdf4ec2fd3facacb2fb3fd2ec2e3fd2fd2ec2e3d3fecf2d4f2e2fd4fec2ec2fd2fbcadabe2a3c2ec2e3fd2fc2ecefd5fc2ec16ed","w2h":"5fdfec2ec2fd3fecf2d4f2e2fd4fecef2a3cec5ec2ec2ec5ec2ec5ec2ec2ec4e2a4fde3cbaba6fec2ec5fdfec2fd4fec2ec2e3fd2fce2ca2fd11ea3fd2fc2ecefd5fc2ec5ecec4bfbdfdabad2a3c2ec2ec5ec2e3c4ec2ec5ec2ec5e2a3fd2fc2ecea13ece5a3eca4c2a6b6a6b2abe2cdc3d5a2c3ba22c4a6ba4c6b9a6ba2cb3efe6ba6b6a7b6a7b4a3c6b2a7b5a7b2a6b6ab14a6b5a7b24a6e5a2eca6fc2ece4fd2fce4fd2fc2e2a4fdfec3e2fd2fdf4ec2fd2fdf2e2ca2fd3fec5fdf2dbfdcfefefc2fd3fbadebed3fd2ba3eafea2cecfefefc2fd4fe2cbc3d4fcead4fd2eade2a3ce2cab3fd2fcefd5fc2ec2e3fd2fd2ec5eafec2ecefc4eaf3ec2ef4ecefc5e5fd2ec5ea2fec2ec9ea","w2i":"5fdfec2ec2fd3fecfd4fd4efd2fdabeb6e6c3d3fec5fdfec2ec5fdfec5fd2ecefd5fc2ece2f3abab3a3c2e2bcfdacd2ab3a3ce2c2a6fec2ec8ea4fdfec3e2fd2fdfeb2c2ec2fd2f3e3cd4fd2ec2e5fdfec5e5fdcbaba7ec2e3fbcadabab2a3c2e2ac6fc2ec2ec4efd2fdf2e2fd2fdfec3e2fd2fdf3e2adb4fc2ecf2a3c2ec2ecf2d3fec5fdfe2cacd2a3cec2e3fd2fd2ec2e3fd2fd5e5fd2ec7ec5ed5fc2ece2fb4f2e7f3cb2a3c2ecefd4fe2cdabfdfa2d2bab2a3c2e2bce5fd2ec3efcbab2a3c2ec5ec2fd4fec3a6fc2ece4fc2eb2af2a3c2ec2e3fd2fc2e2af2d4f2ef2d4fcefd2fdfec8e8c3d3fec5fdfec2ec3e2fd2fdf4e5fdfec2e3fd2fc2ecebc2fd2fd2ec4ef2d3bdc4efc5ef2eab2cf6ef4ecefc2ec2ef2ec2ecf4ecefd2fdf4ec10e"};
-/*PROOF-END*/
 
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const BUILD='2026-11-06 v61';
+const BUILD='2026-11-12 v67';
 /* ---------------- Game log ----------------
    Every session records what happened: device and screen, view size, level starts, deaths (cause, tile, heat),
-   braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 6 sessions) and,
+   braziers, coal, clears, frame-rate drops and any script error. It is kept on this device (last 4 sessions) and,
    when the page runs inside Claude with its database, synced to the "logs" collection so it can be read back. */
 const LOG=(()=>{
   const sid=Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0=performance.now(),PART=400;
@@ -745,11 +751,18 @@ const LOG=(()=>{
 })();
 function h(tag,props={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(v==null)continue;if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v)}for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e}
 const fmtTime=f=>{const s=f/60;const m=Math.floor(s/60);return m+':'+(s%60).toFixed(1).padStart(4,'0')};
-const K=PROOF.k||3;
-function decodeProof(s){const out=[];let n='';for(const ch of s||''){if(ch>='0'&&ch<='9')n+=ch;else{const c=ch.charCodeAt(0)-97;for(let i=0;i<(n?+n:1);i++)out.push(c);n=''}}return out}
 
 /* ---------------- Canvas ---------------- */
 const cvs=$('#game'),ctx=cvs.getContext('2d');
+// Smoothing: the game steps 60 times a second. On a faster display Ember and the camera are drawn part-way between
+// the last two steps (lerpA, 0 to 1); on a 60 Hz display lerpA stays 1 and the latest step is drawn as it always was.
+let SPK=null,lerpA=1;const SPKO={};
+// Smoothing for hazards and sparks on fast displays. HZB is how far back towards the previous step to draw (0 = no smoothing).
+// Hazards that follow the clock are drawn at a fractional clock; the ones that carry their own position (drops, anvils, the
+// hunter, fire runners) have it recorded before each step (px, py) and hzI returns a copy moved back along that path.
+let HZB=0;const HZS=[{},{},{},{}];
+function hzI(o,k){if(!HZB||o.px===undefined)return o;const dx=o.x-o.px,dy=o.y-o.py;if(!dx&&!dy)return o;const q=Object.assign(HZS[k],o);
+  if(Math.abs(dx)<=48)q.x=o.x-dx*HZB;if(Math.abs(dy)<=48)q.y=o.y-dy*HZB;return q}
 let dpr=1,scale=1,viewW=800,baseScale=1,baseW=800,viewH=VH,zoom=1;
 // View size: 100% shows all 15 rows of the level; larger values zoom in and the camera follows Ember up and down.
 // Short screens (a phone held sideways) start zoomed in; the player's own choice is remembered per device.
@@ -852,17 +865,20 @@ function drawCog(g,cx,cy,t){g.save();g.translate(cx,cy);g.fillStyle='rgba(255,90
   g.fillStyle='#9aa1ab';for(let k=0;k<10;k++){g.save();g.rotate(k*Math.PI/5);g.fillRect(-3,-16,6,6);g.restore()}
   g.beginPath();g.arc(0,0,12,0,7);g.fill();g.fillStyle='#5d636d';g.beginPath();g.arc(0,0,8.5,0,7);g.fill();
   g.fillStyle='#ff6a1a';g.beginPath();g.arc(0,0,4.5,0,7);g.fill();g.fillStyle='#1a0e09';g.fillRect(-1,-8,2,16);g.restore()}
-function drawTile(g,c,x,y,tx,ty,env){
+// m: 0 draws the whole tile; 1 only the part that never changes (this goes into the tile cache); 2 only the animated part
+function drawTile(g,c,x,y,tx,ty,env,m){
   const t=env.t;
   switch(c){
-  case'#':{g.fillStyle='#2f2420';g.fillRect(x,y,TS,TS);g.fillStyle='#3a2d27';const row=(ty%2)*16;g.fillRect(x+1,y+1,TS-2,14);g.fillRect(x+1,y+17,TS-2,14);
+  case'#':{const up=envTile(env,tx,ty-1),glowLive=m&&up!=='.';// the glow above the top edge lies over the tile above, so it is cached only when that tile is empty
+    if(m!==2){g.fillStyle='#2f2420';g.fillRect(x,y,TS,TS);g.fillStyle='#3a2d27';const row=(ty%2)*16;g.fillRect(x+1,y+1,TS-2,14);g.fillRect(x+1,y+17,TS-2,14);
     g.fillStyle='#1d1512';g.fillRect(x+((row+tx*0)%32),y+15,1,0);g.fillRect(x,y+15,TS,2);g.fillRect(x+(ty%2?8:24),y,2,15);g.fillRect(x+(ty%2?24:8),y+17,2,15);
-    const up=envTile(env,tx,ty-1);if(up!=='#'){g.fillStyle='#4a3a32';g.fillRect(x,y,TS,4);const hot=.55+.25*Math.sin(t*2+tx*.7);g.fillStyle=`rgba(255,110,30,${hot})`;g.fillRect(x,y,TS,2);
-      g.fillStyle='rgba(255,140,60,.12)';g.fillRect(x,y-6,TS,6)}
+    if(up!=='#'){g.fillStyle='#4a3a32';g.fillRect(x,y,TS,4);if(!glowLive){g.fillStyle='rgba(255,140,60,.12)';g.fillRect(x,y-6,TS,6)}}
     g.fillStyle='#5a4a42';if((hash(tx,ty)%3)===0){g.fillRect(x+5,y+8,2,2);g.fillRect(x+25,y+24,2,2)}
     if(up!=='#'&&hash(Math.floor(tx/5),ty)%3===0){g.fillStyle=vgrad(g,'cap',y,y+12,[[0,'#5d636d'],[1,'#2b2f36']]);g.fillRect(x,y+2,TS,10);g.fillStyle='#8d95a1';g.fillRect(x,y+2,TS,1.5);g.fillStyle='#1b1f26';g.fillRect(x+TS-1,y+2,1,10);g.fillStyle='#a9b0bb';g.fillRect(x+5,y+6,2,2);g.fillRect(x+24,y+6,2,2);g.fillStyle='rgba(255,110,30,.7)';g.fillRect(x,y+2,TS,1)}
     else if(up!=='#'&&hash(tx,ty+7)%9===0){g.strokeStyle='rgba(255,120,40,.55)';g.lineWidth=1.2;g.beginPath();g.moveTo(x+6,y+4);g.lineTo(x+11,y+11);g.lineTo(x+9,y+17);g.stroke()}
-    if(up==='#'){const d=envTile(env,tx,ty-2)==='#'?.38:.2;g.fillStyle=`rgba(0,0,0,${d})`;g.fillRect(x,y,TS,TS)}break}
+    if(up==='#'){const d=envTile(env,tx,ty-2)==='#'?.38:.2;g.fillStyle=`rgba(0,0,0,${d})`;g.fillRect(x,y,TS,TS)}}
+    if(m!==1&&up!=='#'){const hot=.55+.25*Math.sin(t*2+tx*.7);g.fillStyle=`rgba(255,110,30,${hot})`;g.fillRect(x,y,TS,2);if(glowLive){g.fillStyle='rgba(255,140,60,.12)';g.fillRect(x,y-6,TS,6)}}
+    break}
   case'B':{g.fillStyle='#262a31';g.fillRect(x,y,TS,TS);g.fillStyle=vgrad(g,'B',y,y+TS,ST_B);g.fillRect(x+2,y+2,TS-4,TS-4);
     g.fillStyle='#8d95a1';g.fillRect(x+2,y+2,TS-4,2);g.fillStyle='#2b2f36';for(const[a,b]of[[6,6],[24,6],[6,24],[24,24]]){g.beginPath();g.arc(x+a+1,y+b+1,2,0,7);g.fill()}
     g.fillStyle='#a9b0bb';for(const[a,b]of[[6,6],[24,6],[6,24],[24,24]])g.fillRect(x+a,y+b,1.5,1.5);
@@ -893,9 +909,10 @@ function drawTile(g,c,x,y,tx,ty,env){
     for(let i=0;i<2;i++){const bx=x+4+i*12;g.fillStyle='#4a423e';g.beginPath();g.moveTo(bx,y+TS);g.lineTo(bx+6,y+14);g.lineTo(bx+12,y+TS);g.closePath();g.fill();
       g.fillStyle='#ff6a1a';g.beginPath();g.moveTo(bx+4,y+20);g.lineTo(bx+6,y+14);g.lineTo(bx+8,y+20);g.closePath();g.fill()}
     g.fillStyle='#2a221f';g.fillRect(x,y+TS-3,TS,3);break}
-  case'v':{g.fillStyle='#2a221f';g.fillRect(x,y,TS,4);for(let i=0;i<2;i++){const bx=x+4+i*12;g.fillStyle='#3d3430';g.beginPath();g.moveTo(bx,y+3);g.lineTo(bx+6,y+18);g.lineTo(bx+12,y+3);g.closePath();g.fill();
-      g.fillStyle='#ff6a1a';g.beginPath();g.moveTo(bx+4,y+12);g.lineTo(bx+6,y+18);g.lineTo(bx+8,y+12);g.closePath();g.fill()}
-    const d=fract(t*.6+hash(tx,ty)%97/97);if(hash(tx,ty)%4===0){g.fillStyle=`rgba(255,160,70,${1-d})`;g.fillRect(x+9,y+18+d*40,2,4)}break}
+  case'v':{if(m!==2){g.fillStyle='#2a221f';g.fillRect(x,y,TS,4);for(let i=0;i<2;i++){const bx=x+4+i*12;g.fillStyle='#3d3430';g.beginPath();g.moveTo(bx,y+3);g.lineTo(bx+6,y+18);g.lineTo(bx+12,y+3);g.closePath();g.fill();
+      g.fillStyle='#ff6a1a';g.beginPath();g.moveTo(bx+4,y+12);g.lineTo(bx+6,y+18);g.lineTo(bx+8,y+12);g.closePath();g.fill()}}
+    // the drip used to be hidden by whatever tile was drawn after it; drawn on top of the cache, it stops at the first tile it meets instead
+    if(m!==1&&hash(tx,ty)%4===0){const d=fract(t*.6+hash(tx,ty)%97/97),dy=y+18+d*40,by=Math.floor((dy+4)/TS);if(!m||by===ty||envTile(env,tx,by)==='.'){g.fillStyle=`rgba(255,160,70,${1-d})`;g.fillRect(x+9,dy,2,4)}}break}
   case'X':drawCog(g,x+16,y+16,t);break;
   case'n':break;
   case'R':{g.fillStyle='#262a31';g.fillRect(x,y,TS,TS);g.fillStyle='#4a5260';g.fillRect(x+1,y+1,TS-2,6);g.fillStyle='#0e1013';for(let i=0;i<4;i++)g.fillRect(x+3+i*8,y+2,4,4);g.fillStyle='#1c1f25';g.fillRect(x,y+8,TS,TS-8);g.fillStyle='#2f343c';for(let i=0;i<3;i++)g.fillRect(x+4,y+12+i*6,TS-8,2);break}
@@ -922,6 +939,36 @@ function drawTile(g,c,x,y,tx,ty,env){
 function drawWall(g,x,y,tx,ty,w){g.fillStyle='#120c09';g.fillRect(x,y,TS,TS);g.fillStyle='#1a120e';g.fillRect(x+1,y+1,TS-2,14);g.fillRect(x+1,y+17,TS-2,14);
   g.fillStyle='#0b0706';g.fillRect(x+(ty%2?8:24),y,2,15);g.fillRect(x+(ty%2?24:8),y+17,2,15);
   const edge=tx===-1?x+TS-6:tx===w?x:null;if(edge!==null){g.fillStyle='#3e434c';g.fillRect(edge,y,6,TS);g.fillStyle='#6b727d';g.fillRect(edge+(tx===-1?4:0),y,2,TS);g.fillStyle='#8d95a1';g.fillRect(edge+2,y+14,2,2)}}
+
+/* Tile cache. Most tiles never change (brick, steel, grates, spikes, the walls beyond the level), so they are drawn once
+   into off-screen squares of TC.cs x TC.cs tiles and each frame copies the visible squares to the screen. Only tiles that
+   move or glow are drawn every frame. The squares are cut on whole screen pixels and drawn at the screen's own scale, so
+   the picture is the same as drawing every tile live. A square is redrawn when a tile in or next to it changes (coal
+   taken, an anvil landing), and everything is dropped when the level, the zoom or the window size changes. */
+const TC={grid:null,k:0,snap:null,map:new Map(),pool:[],cs:8,dim:0,n:0,max:0,off:false};
+function tileMode(env,c,tx,ty){switch(c){case'#':return envTile(env,tx,ty-1)==='#'?1:2;case'B':case'R':case'^':return 1;case'v':return hash(tx,ty)%4===0?2:1;
+  case'-':return envTile(env,tx,ty-1)==='.'?1:0;case'I':return SOLID.has(envTile(env,tx,ty-1))?1:0}return 0}
+const tileLate=(env,c,ty)=>c==='G'||c==='~'||c==='^'&&ty===env.rows-1;
+function tcBuild(env,ci,cj,k,key){const cs=TC.cs,X=Math.round(ci*cs*TS*k),Y=Math.round(cj*cs*TS*k),w=Math.round((ci+1)*cs*TS*k)-X,hh=Math.round((cj+1)*cs*TS*k)-Y;
+  const c=TC.pool.pop()||Object.assign(document.createElement('canvas'),{width:TC.dim,height:TC.dim}),g=c.getContext('2d');let any=false;
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,TC.dim,TC.dim);g.setTransform(k,0,0,k,-X,-Y);
+  // one extra tile all round: a neighbour's glow or chain can reach into this square
+  for(let ty=Math.max(0,cj*cs-1);ty<=Math.min(env.rows-1,(cj+1)*cs);ty++)for(let tx=ci*cs-1;tx<=(ci+1)*cs;tx++){
+    if(tx<0||tx>=env.w){drawWall(g,tx*TS,ty*TS,tx,ty,env.w);any=true;continue}
+    const ch=env.grid[ty*env.w+tx];if(ch==='.'||tileLate(env,ch,ty)||!tileMode(env,ch,tx,ty))continue;drawTile(g,ch,tx*TS,ty*TS,tx,ty,env,1);any=true}
+  const q={c,X,Y,w,h:hh,any,n:0};TC.map.set(key,q);return q}
+function drawTileCache(g,env,x0,x1,y0,y1,dx,dy,k){
+  if(TC.grid!==env.grid||TC.k!==k){const same=TC.k===k;for(const q of TC.map.values())if(same)TC.pool.push(q.c);TC.map.clear();if(!same)TC.pool.length=0;
+    TC.grid=env.grid;TC.k=k;TC.snap=env.grid.slice();TC.cs=Math.max(2,Math.min(8,Math.floor(640/(TS*k))));TC.dim=Math.ceil(TC.cs*TS*k)+1;
+    TC.max=Math.ceil(2.5*cvs.width*cvs.height/(TC.dim*TC.dim))+4}
+  const cs=TC.cs,W=env.w;
+  for(let ty=y0;ty<=y1;ty++)for(let tx=Math.max(0,x0);tx<=Math.min(W-1,x1);tx++){const i=ty*W+tx;if(env.grid[i]!==TC.snap[i]){TC.snap[i]=env.grid[i];
+    for(let b=Math.floor((ty-3)/cs);b<=Math.floor((ty+3)/cs);b++)for(let a=Math.floor((tx-1)/cs);a<=Math.floor((tx+1)/cs);a++){const key=(a+512)*4096+b,q=TC.map.get(key);if(q){TC.map.delete(key);TC.pool.push(q.c)}}}}
+  TC.n++;g.save();g.setTransform(1,0,0,1,0,0);
+  for(let cj=Math.floor(y0/cs);cj<=Math.floor(y1/cs);cj++)for(let ci=Math.floor(x0/cs);ci<=Math.floor(x1/cs);ci++){const key=(ci+512)*4096+cj,q=TC.map.get(key)||tcBuild(env,ci,cj,k,key);
+    q.n=TC.n;if(q.any)g.drawImage(q.c,0,0,q.w,q.h,q.X+dx,q.Y+dy,q.w,q.h)}
+  g.restore();
+  if(TC.map.size>TC.max)for(const[key,q]of TC.map){if(q.n!==TC.n){TC.map.delete(key);TC.pool.push(q.c)}if(TC.map.size<=TC.max)break}}
 
 /* ---------- Hazard Lab drawing ---------- */
 function drawAnvil(g,x,y,glow){g.fillStyle='#262a31';g.beginPath();g.moveTo(x-15,y-16);g.lineTo(x+15,y-16);g.lineTo(x+15,y-9);g.lineTo(x+7,y-4);g.lineTo(x+7,y+8);g.lineTo(x+14,y+16);g.lineTo(x-14,y+16);g.lineTo(x-7,y+8);g.lineTo(x-7,y-4);g.lineTo(x-15,y-9);g.closePath();g.fill();
@@ -1083,23 +1130,23 @@ function drawHazards(g,R,clock,t){const hz=R.hz;if(!hz)return;
   for(const s of hz.slides)drawSlide(g,s,slideX(s,clock),t);
   for(const sp of hz.spikes)drawSpikes(g,sp,t);
   for(const fh of hz.fish){const f0=((clock+fh.off)%fh.per+fh.per)%fh.per;if(f0>fh.per-24)drawBubbles(g,fh.x,fh.base,t,(f0-(fh.per-24))/24);for(let k=0;k<fh.n;k++){const q=fishPos(fh,clock,k);if(q)drawFish(g,q,t)}}
-  for(const r of hz.runners)drawRunner(g,r,t);
+  for(const r of hz.runners)drawRunner(g,hzI(r,3),t);
   for(const b of hz.bats){const q=batPos(b,clock);drawBat(g,q.x,q.y,t,b.warn,R.p.x)}
   for(const r of hz.ricos)drawRico(g,ricoPos(r,clock),t);
   for(const pi of hz.pistons)drawPiston(g,pi,pistonTop(pi,clock));
   for(const d of hz.ladles)drawLadle(g,d,clock,t);
-  for(const h of hz.hooks)drawHook(g,h,t);
+  for(const h of hz.hooks)drawHook(g,hzI(h,1),t);
   for(const e of hz.cinders){const f=(clock+e.ph)%e.per;if(f>e.per-30)drawBubbles(g,e.x,e.base,t,(f-(e.per-30))/30);const q=cinderPos(e,clock);if(q){if(e.ball)drawFireball(g,q.x,q.y,t,q.f*(e.spd||1)<34?1:-1);else drawChomper(g,q.x,q.y,t,q.f<34?1:-1,R.p.x+11,R.p.y+13)}}
   for(const j of hz.jets){const s=jetHeat(j,clock);drawJet(g,j,s[0],s[1],t)}
-  for(const d of hz.drops)drawDrop(g,d);for(const d of hz.drops)if(d.k==='bomb'){g.fillStyle='#1c1f25';g.beginPath();g.arc(d.x,d.y,8,0,7);g.fill();g.strokeStyle='#ffb347';g.lineWidth=1.5;g.beginPath();g.moveTo(d.x-6,d.y-2);g.lineTo(d.x-1,d.y+1);g.lineTo(d.x+2,d.y-4);g.moveTo(d.x,d.y+2);g.lineTo(d.x+5,d.y+4);g.stroke();g.fillStyle='rgba(255,120,40,.5)';g.beginPath();g.arc(d.x,d.y,10,0,7);g.fill()}
-  for(const w of hz.crows){const q=crowPos(w,clock);const warm=w.hunt?(w.warn>0?1:0):Math.max(0,((clock+w.off)%w.every-(w.every-16))/16);
+  for(const d of hz.drops)drawDrop(g,hzI(d,0));for(const d0 of hz.drops)if(d0.k==='bomb'){const d=hzI(d0,0);g.fillStyle='#1c1f25';g.beginPath();g.arc(d.x,d.y,8,0,7);g.fill();g.strokeStyle='#ffb347';g.lineWidth=1.5;g.beginPath();g.moveTo(d.x-6,d.y-2);g.lineTo(d.x-1,d.y+1);g.lineTo(d.x+2,d.y-4);g.moveTo(d.x,d.y+2);g.lineTo(d.x+5,d.y+4);g.stroke();g.fillStyle='rgba(255,120,40,.5)';g.beginPath();g.arc(d.x,d.y,10,0,7);g.fill()}
+  for(const w of hz.crows){const q=crowPos(hzI(w,2),clock);const warm=w.hunt?(w.warn>0?1:0):Math.max(0,((clock+w.off)%w.every-(w.every-16))/16);
     if(w.hunt)drawDrone(g,q.x,q.y,t,w.warn,R.p.x+11,R.p.y+13,w.hot);else drawBalloon(g,q.x,q.y,t,warm)}}
 function hzLights(R,clock,L){const hz=R.hz;
   for(const j of hz.jets){const s=jetHeat(j,clock);if(s[1]>0){const b=jetBox(j,s[1]);L(b[0]+b[2]/2,b[1]+b[3]/2,60+j.len*s[1]*.4,.95)}else L(j.x,j.y-6,30+50*s[0],.35+.55*s[0])}
-  for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d of hz.drops)L(d.x,d.y,36,.85);
-  for(const h of hz.hooks)L(h.x,h.y,44,.55);for(const w of hz.crows){const q=crowPos(w,clock);L(q.x,q.y,50,.7)}
+  for(const d of hz.ladles){const q=ladlePos(d,clock);L(q.x,q.y,56,.7)}for(const d0 of hz.drops){const d=hzI(d0,0);L(d.x,d.y,36,.85)}
+  for(const h0 of hz.hooks){const h=hzI(h0,1);L(h.x,h.y,44,.55)}for(const w of hz.crows){const q=crowPos(hzI(w,2),clock);L(q.x,q.y,50,.7)}
   for(const e of hz.cinders){const q=cinderPos(e,clock);if(q)L(q.x,q.y,56,.9)}
-  for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const q of hz.guards)L(q.x,q.y-24,46,q.st===2?.9:.5);for(const r of hz.runners)L(r.x,r.y-8,40,.9);
+  for(const b of hz.bats){const q=batPos(b,clock);L(q.x,q.y,44,b.warn>0?.9:.5)}for(const q of hz.guards)L(q.x,q.y-24,46,q.st===2?.9:.5);for(const r0 of hz.runners){const r=hzI(r0,3);L(r.x,r.y-8,40,.9)}
   for(const fh of hz.fish)for(let k=0;k<fh.n;k++){const q=fishPos(fh,clock,k);if(q)L(q.x,q.y,40,.7)}
   for(const r of hz.ricos){const q=ricoPos(r,clock);L(q.x,q.y,60,.9)}for(const s of hz.slides)L(slideX(s,clock)+32,s.y+6,40,.4)
   for(const gr of hz.grinders){const q=grinderPos(gr,clock);L(q.x,q.y,48,.7)}}
@@ -1153,11 +1200,11 @@ function drawDark(R,env,camX,sx,sy,th,playing,t){
     else if((c==='T'||c==='U')&&timedOn(c,env.clock))L(X,Y,62,c==='T'?.75:.45);
     else if(c==='C'||c==='@'||c==='I'||c==='-'||c==='n'||c==='R')L(X,Y,34,.35);
   }
-  for(const m of R.movers){const q=moverPos(m,env.clock);L(q.x,q.y,54,.65)}
+  for(const m of R.movers){const q=moverPos(m,env.clockF);L(q.x,q.y,54,.65)}
   if(playing)for(const b of BGL)L0(camX+b[0]/zoom,b[1]/zoom-sy,b[2]/zoom,b[3]*.75);
-  if(R.hz){hzLights(R,env.clock,L);for(const pi of R.hz.pistons)L(pi.x+pi.w/2,pistonTop(pi,env.clock),46,.55)}
+  if(R.hz){hzLights(R,env.clockF,L);for(const pi of R.hz.pistons)L(pi.x+pi.w/2,pistonTop(pi,env.clockF),46,.55)}
   if(INTRO_FX&&INTRO_FX.front>-1e8){const f=INTRO_FX.front,a=.55*INTRO_FX.dark;for(const y of[60,200,340,460])L0(f,y,170,a)}
-  if(playing&&!R.p.dead){const hf=Math.max(0,R.heat/R.heatMax),fl=1+.05*Math.sin(t*23),dy=INTRO_FX?INTRO_FX.drop:0;L0(R.p.x+11,R.p.y+14-dy,(120+140*hf)*fl,1);L0(R.p.x+11,R.p.y+14-dy,70,1)}
+  if(playing&&!R.p.dead){const hf=Math.max(0,R.heat/R.heatMax),fl=1+.05*Math.sin(t*23),dy=INTRO_FX?INTRO_FX.drop:0;const q=SPK||R.p;L0(q.x+11,q.y+14-dy,(120+140*hf)*fl,1);L0(q.x+11,q.y+14-dy,70,1)}
   lctx.globalAlpha=1;lctx.globalCompositeOperation='source-over';
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lightCvs,0,0,cvs.width,cvs.height);ctx.restore()}
 
@@ -1291,10 +1338,10 @@ function makeFx(V){
     dust:(x,y,n=6)=>{for(let i=0;i<n;i++)V.parts.push({x:x+(Math.random()-.5)*14,y,vx:(Math.random()-.5)*2,vy:-Math.random()*1.4,life:18,max:18,c:i%2?'#ffb347':'#ff6a1a',s:2.5,g:-.02})},
     burst,
     die:(R,why)=>{const p=R.p;V.shake=reduceMotion?0:9;V.freeze=reduceMotion?0:7;V.flash={c:why==='burn'?'40,32,28':'255,80,30',a:.3};
-      if(!V.replay){const id=LEVELS[V.idx].id;addDeath(id)}burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
+      addDeath(LEVELS[V.idx].id);burst(p.x+p.w/2,p.y+p.h/2,30,why==='burn'?['#5a4a42','#3a2d27','#8a7a70']:['#ffd27a','#ff6a1a','#5a4a42','#2a1d17'],why==='burn'?2:4.5,why==='burn'?-.03:.18);SFX.die();
       {const HZN={jet:'a <b>flame jet</b>. They fire on the hammer beat.',trap:'a <b>trap jet</b>. Get close, let it fire, then cross.',slag:'<b>slag</b> from the ladle. It tips before it pours.',anvil:'an <b>anvil</b>. Keep moving under them.',crow:'a flier itself. Keep clear of it. The red-hot drone is quicker: it drops twice, so a dodge has to be a jump.',cinder:'a <b>cinder</b>.',biter:'a <b>fire-biter</b>. Wait for the bubbles, cross as it falls back.',fireball:'a <b>flame ball</b>. Jump the gap as it drops back into the lava.',bat:'a <b>forge bat</b>. Keep clear of it: it flies at jump height.',fire:'the <b>fire</b> from a bat\'s slag bomb. It splits and runs both ways along the floor: jump it.',spike:'<b>landing spikes</b>. They pop a moment after you land. Jump straight off.',fish:'a <b>bone fish</b>. They leap from the gap in ones, twos and threes, biting. Hop while the water is still.',ball:'a <b>ricochet ball</b>. It bounces round the chamber on a fixed path. Go through behind it.',grinder:'a <b>grinder</b>. It rolls along its wall and back, or right round its pillar. Stay off its stone until it has passed.',guard:'a <b>bone guard</b>. It raises its shield when it sees you, then swings. Let it swing, then jump over it.'};
-       if(HZN[why]&&!V.replay){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
-      if(why==='burn'&&!V.replay&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
+       if(HZN[why]){V.told=V.told||{};if(!V.told[why]){V.told[why]=1;showHint('Hit by '+HZN[why],2800)}}}
+      if(why==='burn'&&!V.toldBurn){V.toldBurn=true;showHint('You <b>burned out</b>. Braziers refill your heat. Coal adds a little.',3500)}},
     win:R=>{V.flash={c:'255,240,210',a:.6};V.slow=40;SFX.win();burst(R.p.x+R.p.w/2,R.p.y,44,['#fff4d6','#ffd27a','#ff6a1a'],5,.08)},
     spring:(R,i)=>{V.springAnim.set(i,14);SFX.spring()},
     check:(R,X,Y)=>{V.flash={c:'255,200,120',a:.38};SFX.check();burst(X+16,Y+6,16,['#ffd27a','#ff6a1a'],2.5,-.04)},
@@ -1324,7 +1371,7 @@ addEventListener('keydown',e=>{ensureAudio();const k=e.key;
   if(k==='ArrowRight'||k==='d'||k==='D')input.kr=true;
   if((k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')&&!e.repeat){input.kj=true;input.pressed=true}
   if((k==='Escape'||k==='p'||k==='P')&&!e.repeat&&V&&!V.R.won){V.paused?resume():pause()}
-  if((k==='r'||k==='R')&&!e.repeat&&V&&!V.R.won&&!V.replay){startLevel(V.idx,false)}});
+  if((k==='r'||k==='R')&&!e.repeat&&V&&!V.R.won){startLevel(V.idx)}});
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='ArrowLeft'||k==='a'||k==='A')input.kl=false;if(k==='ArrowRight'||k==='d'||k==='D')input.kr=false;
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'||k==='z'||k==='Z')input.kj=false});
@@ -1356,10 +1403,10 @@ for(const el of[jb,jz]){el.addEventListener('pointerdown',e=>{e.preventDefault()
 // gesture, a call banner), which used to leave Ember running on his own. When no finger is on the screen at all,
 // every touch control is released, and the log notes it so a stuck input shows up there.
 function releaseTouch(why){const stuck=padPtrs.size>0||input.tj;if(why==='touchend'||why==='touchcancel'){let last=null;for(const q of padPtrs.values())last=q;if(last)startGrace(padDir(last))}else gLeft=0;padPtrs.clear();jumpPtrs.clear();input.tl=input.tr=input.tj=false;input.tv=0;jb.classList.remove('on');stickHide();
-  if(stuck&&screen==='play'&&V&&!V.replay)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
+  if(stuck&&screen==='play'&&V)LOG.add('input',{fix:why,lv:LEVELS[V.idx].code,clk:V.R.clock})}
 function over(el,t,m){const r=el.getBoundingClientRect();return t.clientX>=r.left-m&&t.clientX<=r.right+m&&t.clientY>=r.top-m&&t.clientY<=r.bottom+m}
 function reconcile(e){const ts=[...e.touches];if(padPtrs.size>0&&!ts.some(t=>over(pad,t,160))){let last=null;for(const q of padPtrs.values()){last=q;break}startGrace(padDir(last));padPtrs.clear();padUpdate();stickHide();
-    if(screen==='play'&&V&&!V.replay)LOG.add('input',{fix:'pad',lv:LEVELS[V.idx].code,clk:V.R.clock})}
+    if(screen==='play'&&V)LOG.add('input',{fix:'pad',lv:LEVELS[V.idx].code,clk:V.R.clock})}
   if(input.tj&&!ts.some(t=>over(jz,t,24))){jumpPtrs.clear();input.tj=false;jb.classList.remove('on')}}
 for(const ev of['touchend','touchcancel'])addEventListener(ev,e=>{if(e.touches.length===0){if(padPtrs.size>0||input.tj)releaseTouch(ev)}else reconcile(e)},{passive:true,capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch('hidden')});
@@ -1680,21 +1727,21 @@ const cleared=store.get('tf3-cleared',{});
 if(cleared.w1a&&cleared.w1b)cleared.w1ab=true;if(cleared.w1c&&cleared.w1d)cleared.w1cd=true;
 // a level is open if it is the first, already cleared, or the one before it is cleared (so earlier progress is never re-locked)
 const unlocked=i=>i===0||!!cleared[LEVELS[i].id]||!!cleared[LEVELS[i-1].id];
-function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden=s!=='menu';$('#hud').hidden=s!=='play';$('#controls').hidden=!(s==='play'&&isTouch&&V&&!V.replay);
+function setScreen(s){screen=s;if(s==='menu')Music.setLevel(0);$('#menu').hidden=s!=='menu';$('#hud').hidden=s!=='play';$('#controls').hidden=!(s==='play'&&isTouch&&V);
   if(s!=='play')$('#hint').hidden=true;
   input.kl=input.kr=input.kj=input.tl=input.tr=input.tj=false;input.pressed=false;padPtrs.clear();gLeft=0;padUpdate();stickHide();if(s==='menu')renderMenu()}
-function startLevel(i,replay){menuWorld=null;closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(L.world+1);Music.duck(false);
-  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0,y:0},replay:replay?decodeProof(PROOF[L.id]):null,rf:0,prevHeld:false,toldBurn:false,freeze:0,slow:0,flash:null};
+function startLevel(i){menuWorld=null;closeModal();if(Ending.active)Ending.stop();Music.hide(document.hidden);const L=LEVELS[i];Music.setLevel(L.world+1);Music.duck(false);
+  V={idx:i,parts:[],springAnim:new Map(),shake:0,paused:false,cam:{x:0,y:0},toldBurn:false,freeze:0,slow:0,flash:null};
   V.R=makeRun(L.build(),{fx:makeFx(V),heat:L.heat});
-  {const seen=store.get('tf-intro',{});if(!replay&&!seen[L.id]){V.intro={t:0,dur:i===0?300:230,lit:new Set()};seen[L.id]=1;store.set('tf-intro',seen)}}LOG.add('start',{lv:L.code,replay:replay?1:undefined,zoom:Math.round(zoom*100)});V.cam.x=camTarget();V.cam.y=camTargetY();
-  $('#hudName').textContent=`${L.code} · ${L.name}`;$('#hudName').style.color=THEMES[L.world].acc;$('#replayTag').hidden=!replay;
+  {const seen=store.get('tf-intro',{});if(!seen[L.id]){V.intro={t:0,dur:i===0?300:230,lit:new Set()};seen[L.id]=1;store.set('tf-intro',seen)}}LOG.add('start',{lv:L.code,zoom:Math.round(zoom*100)});V.cam.x=camTarget();V.cam.y=camTargetY();V.ip={x:V.R.p.x,y:V.R.p.y,cx:V.cam.x,cy:V.cam.y};
+  $('#hudName').textContent=`${L.code} · ${L.name}`;$('#hudName').style.color=THEMES[L.world].acc;
   setScreen('play')}
 // Keep the spark just left of center at all times (never pinned into a corner under a thumb), looking a little ahead
 function camTarget(){const p=V.R.p;return p.x+p.w/2-viewW*.45+p.face*28}
 function camTargetY(){const p=V.R.p;return Math.max(0,Math.min(V.R.h-viewH,p.y+p.h/2-viewH*.5))}
 function pause(){if(!V||V.R.won)return;V.paused=true;Music.duck(true);const R=V.R;if(!pause.quiet)LOG.add('pause',Object.assign({lv:LEVELS[V.idx].code,clk:R.clock,deaths:R.deaths},perfInfo()));pause.quiet=false;
   modal(c=>{c.append(h('h3',{text:'Paused'}),h('p',{text:`${R.name} · ${R.deaths} deaths · ${fmtTime(R.clock)} · build ${BUILD.split(' ')[1]}`}),
-    h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),V.replay?null:h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx,false)},'Restart'),
+    h('div',{class:'actions'},h('button',{class:'btn',onclick:resume},'Resume'),h('button',{class:'btn ghost',onclick:()=>startLevel(V.idx)},'Restart'),
       h('button',{class:'btn ghost',onclick:()=>{LOG.add('quit',{lv:LEVELS[V.idx].code,clk:V.R.clock,deaths:V.R.deaths},true);closeModal();V=null;Music.duck(false);setScreen('menu')}},'Title screen'),
       h('button',{class:'btn ghost',onclick:()=>viewSize(()=>{pause.quiet=true;pause()})},'View size'),
       h('button',{class:'btn ghost',id:'pMusic',onclick:e=>{Music.toggle();e.currentTarget.textContent='Music: '+(Music.on?'on':'off');updateMusicBtn()}},'Music: '+(Music.on?'on':'off')),
@@ -1703,18 +1750,16 @@ function resume(){closeModal();if(V)V.paused=false;input.pressed=false;input.kj=
 $('#pauseBtn').addEventListener('click',()=>V&&(V.paused?resume():pause()));
 document.addEventListener('visibilitychange',()=>{Music.hide(document.hidden);if(document.hidden&&screen==='play'&&V&&!V.R.won&&!V.paused)pause()});
 function perfInfo(){const P=V&&V.perf;return P&&P.n?{fps:Math.round(P.n/P.sum),slowFrames:P.slow}:{}}
-function onWin(){const R=V.R,i=V.idx,L=LEVELS[i],rep=!!V.replay;if(!rep)LOG.add('clear',Object.assign({lv:L.code,time:(R.clock/60).toFixed(2),deaths:R.deaths,coal:R.gems+'/'+R.gemsTotal,gold:R.clock<=goldFrames(L)?1:0},perfInfo()),true);
-  if(!rep){const got={i:true,s:R.gems>=R.gemsTotal,g:R.clock<=goldFrames(L)},m=medals[L.id]||{},fresh=[];for(const k of['i','s','g'])if(got[k]&&!m[k]){m[k]=1;fresh.push(k)}medals[L.id]=m;store.set('tf3-medals',medals);V.medalResult={has:m,fresh}}
-  if(!rep){const b=best[L.id]||{};if(!b.t||R.clock<b.t)b.t=R.clock;if(b.d==null||R.deaths<b.d)b.d=R.deaths;best[L.id]=b;store.set('tf3-best',best);cleared[L.id]=true;store.set('tf3-cleared',cleared)}
+function onWin(){const R=V.R,i=V.idx,L=LEVELS[i];LOG.add('clear',Object.assign({lv:L.code,time:(R.clock/60).toFixed(2),deaths:R.deaths,coal:R.gems+'/'+R.gemsTotal,gold:R.clock<=goldFrames(L)?1:0},perfInfo()),true);
+  {const got={i:true,s:R.gems>=R.gemsTotal,g:R.clock<=goldFrames(L)},m=medals[L.id]||{},fresh=[];for(const k of['i','s','g'])if(got[k]&&!m[k]){m[k]=1;fresh.push(k)}medals[L.id]=m;store.set('tf3-medals',medals);V.medalResult={has:m,fresh}}
+  {const b=best[L.id]||{};if(!b.t||R.clock<b.t)b.t=R.clock;if(b.d==null||R.deaths<b.d)b.d=R.deaths;best[L.id]=b;store.set('tf3-best',best);cleared[L.id]=true;store.set('tf3-cleared',cleared)}
   const nxt=i<LEVELS.length-1?i+1:null;
   V.afterEnding=()=>{if(!V||V.R!==R)return;modal(c=>{
-    if(rep){c.append(h('h3',{class:'win',text:'The Forgemaster\u2019s run'}),h('p',{text:`The Forgemaster cleared ${L.name} in ${fmtTime(R.clock)} without dying. Finish under ${fmtTime(goldFrames(L))} to earn gold.`}),
-      h('div',{class:'actions'},unlocked(i)?h('button',{class:'btn',onclick:()=>startLevel(i,false)},'Try it yourself'):null,h('button',{class:'btn ghost',onclick:()=>{closeModal();V=null;setScreen('menu')}},'Menu')));return}
     c.append(h('h3',{class:'win',text:nxt==null?'You reached the crucible':`${L.name} cleared`}),
       h('div',{class:'stats'},h('div',{class:'stat'},h('small',{text:'Time'}),h('b',{text:fmtTime(R.clock)})),h('div',{class:'stat'},h('small',{text:'Deaths'}),h('b',{text:String(R.deaths)})),h('div',{class:'stat'},h('small',{text:'Coal'}),h('b',{text:R.gems+'/'+R.gemsTotal}))),
       medalRow(L,R),
       h('p',{},'Rank: ',h('b',{style:'color:var(--glow)',text:rankFor(R.deaths)}),` \u00b7 ${pride.per[L.id]||0} deaths here all-time. `+(nxt==null?'Every level is done. Very few players ever see this screen.':`${LEVELS[nxt].code} ${LEVELS[nxt].name} is unlocked.`+(LEVELS[nxt].world!==L.world?` World ${LEVELS[nxt].world+1} is for the top ${WORLDS[LEVELS[nxt].world].top}%.`:''))),
-      h('div',{class:'actions'},nxt!=null?h('button',{class:'btn',onclick:()=>startLevel(nxt,false)},'Next level'):null,h('button',{class:'btn ghost',onclick:()=>startLevel(i,false)},'Play again'),h('button',{class:'btn ghost',onclick:()=>{closeModal();V=null;setScreen('menu')}},'Menu')))})};
+      h('div',{class:'actions'},nxt!=null?h('button',{class:'btn',onclick:()=>startLevel(nxt)},'Next level'):null,h('button',{class:'btn ghost',onclick:()=>startLevel(i)},'Play again'),h('button',{class:'btn ghost',onclick:()=>{closeModal();V=null;setScreen('menu')}},'Menu')))})};
   // the big ending plays when you finish a world's finale; other levels go straight to the results card
   setTimeout(()=>{if(!V||V.R!==R)return;if(L.finale)startEnding();else V.afterEnding()},L.finale?650:800)}
 function startEnding(){V.ending=true;$('#hud').hidden=true;$('#controls').hidden=true;$('#hint').hidden=true;Music.hide(true);const R=V.R;
@@ -1723,17 +1768,27 @@ function finishEnding(){if(!V||!V.ending)return;V.ending=false;Ending.stop();Mus
 
 /* Medals. Iron: clear the level. Steel: collect every coal in one run. Gold: finish within 10% of the Forgemaster's time. */
 const medals=store.get('tf3-medals',{});
-// 1-7 was rebuilt: old best times and medals belong to the old layout, so clear them once (clears and unlocks are kept)
-if(!store.get('tf3-f1v2',false)){delete best.f1;delete medals.f1;store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-f1v2',true)}
-// 2-7 (was 2-1) was rebuilt the same way
-if(!store.get('tf3-f2v2',false)){delete best.f2;delete medals.f2;store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-f2v2',true)}
-// every level was rebuilt with the new hazards: old best times and medals no longer apply (unlocks are kept)
-if(!store.get('tf3-hz1',false)){for(const k of Object.keys(best))delete best[k];for(const k of Object.keys(medals))delete medals[k];store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-hz1',true)}
-// flame balls and piston pillars changed these layouts: their old best times and medals no longer apply
-if(!store.get('tf3-hz2',false)){for(const k of['w1cd','w1f','f1','w2c','w2e','w2f','f2','f3','f4','f5']){delete best[k];delete medals[k]}store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-hz2',true)}
-// every level was rebuilt on raised terrain, so old best times and medals no longer apply (cleared levels stay unlocked)
-if(!store.get('tf3-terrain1',false)){for(const k of Object.keys(best))delete best[k];for(const k of Object.keys(medals))delete medals[k];store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-terrain1',true)}
-if(!store.get('tf3-round2',false)){for(const k of['w1cd','w1e','w2a','w2b','w2c','w2d','w2e','w2f','w2g','w2h','w2i','f2']){delete best[k];delete medals[k]}store.set('tf3-best',best);store.set('tf3-medals',medals);store.set('tf3-round2',true)}
+/* Saved-data version. Each entry in SAVE_STEPS is one change to the levels that made old best times and medals
+   meaningless: 'all' clears every level's, a list clears just those levels'. Cleared levels always stay unlocked.
+   The number of entries applied so far is stored as tf3-ver. To retire old times after a future level change, add
+   one entry to the end; never reorder or remove entries. */
+const SAVE_STEPS=[
+  ['f1'],// 1: 1-7 was rebuilt
+  ['f2'],// 2: 2-7 (was 2-1) was rebuilt the same way
+  'all',// 3: every level was rebuilt with the new hazards
+  ['w1cd','w1f','f1','w2c','w2e','w2f','f2','f3','f4','f5'],// 4: flame balls and piston pillars changed these layouts
+  'all',// 5: every level was rebuilt on raised terrain
+  ['w1cd','w1e','w2a','w2b','w2c','w2d','w2e','w2f','w2g','w2h','w2i','f2'],// 6: second round of rebuilds
+  ['w2d','f2','f3'],// 7: the saw chimney in 2-4, 2-10 and 3-1 was widened to three blocks, with the saw a row higher
+  ['w2d'],// 8: 2-4 lost its chimney saw and gained two flame balls and four more saws under the spike roof
+];
+(()=>{const OLD=['tf3-f1v2','tf3-f2v2','tf3-hz1','tf3-hz2','tf3-terrain1','tf3-round2'];// the one-off flags used before tf3-ver, in order
+  let v=store.get('tf3-ver',null);const had=v;
+  if(typeof v!=='number'){v=0;while(v<OLD.length&&store.get(OLD[v],false))v++}
+  if(v<SAVE_STEPS.length){for(const st of SAVE_STEPS.slice(v))for(const k of st==='all'?Object.keys(best).concat(Object.keys(medals)):st){delete best[k];delete medals[k]}
+    store.set('tf3-best',best);store.set('tf3-medals',medals)}
+  if(had!==SAVE_STEPS.length)store.set('tf3-ver',SAVE_STEPS.length);
+  try{for(const k of OLD)localStorage.removeItem(k)}catch(e){}})();
 const goldFrames=L=>Math.ceil((L.fm||0)*1.10/6)*6;
 function medalPips(id){const m=medals[id]||{},n=['i','s','g'].filter(k=>m[k]).length;return h('span',{class:'pips',role:'img','aria-label':`${n} of 3 medals`},...['i','s','g'].map(k=>h('span',{class:`medal ${k}${m[k]?' on':''}`})))}
 function medalRow(L,R){const M=V.medalResult||{has:{},fresh:[]};
@@ -1776,12 +1831,12 @@ function renderMenu(){const list=$('#levelList');list.innerHTML='';let n=0;
   wt.append(h('span',{text:`World ${menuWorld+1} · ${Wd.name}`}),h('span',{class:'top',style:`background:${Wd.color}`,text:`Top ${Wd.top}%`}));
   LEVELS.forEach((L,i)=>{if(L.world!==menuWorld)return;const done=!!cleared[L.id],open=unlocked(i),b=best[L.id];
     const meta=done&&b?`Best ${fmtTime(b.t)}`:`Gold ${fmtTime(goldFrames(L))}`;
-    list.append(h('button',{class:'tile'+(done?' done':'')+(open?'':' locked')+(i===tgt&&open?' next':''),'aria-disabled':open?null:'true','aria-label':`${L.code} ${L.name}${open?'':', locked'}`,onclick:()=>open&&startLevel(i,false)},
+    list.append(h('button',{class:'tile'+(done?' done':'')+(open?'':' locked')+(i===tgt&&open?' next':''),'aria-disabled':open?null:'true','aria-label':`${L.code} ${L.name}${open?'':', locked'}`,onclick:()=>open&&startLevel(i)},
       h('span',{class:'t1'},h('span',{class:'code',text:L.code}),h('span',{class:'nm',text:L.name})),
       h('span',{class:'t2'},open?h('span',{class:'meta',text:meta}):h('span',{class:'meta',text:'Locked'}),medalPips(L.id),open?h('span',{class:'play','aria-hidden':'true'}):null)))});
   $('#progress').textContent=`${n} / ${LEVELS.length}`;
   $('#pride').textContent=pride.total?`The forge has claimed Ember ${pride.total.toLocaleString()} time${pride.total===1?'':'s'}.`:'The forge has not claimed Ember yet.'}
-$('#mPlay').addEventListener('click',()=>startLevel(playTarget(),false));
+$('#mPlay').addEventListener('click',()=>startLevel(playTarget()));
 $('#mMute').addEventListener('click',()=>{muted=!muted;store.set('tf-mute',muted);updateMuteBtn();ensureAudio();SFX.gem()});
 updateMuteBtn();
 $('#mMusic').addEventListener('click',()=>{Music.toggle();updateMusicBtn()});updateMusicBtn();
@@ -1817,7 +1872,9 @@ $('#mView').addEventListener('click',()=>viewSize());
 $('#buildTag').textContent='Build '+BUILD.split(' ')[1];
 
 /* ---------------- Loop ---------------- */
-function tick(){if(!V||V.paused)return;const R=V.R;
+function tick(){if(V){const q=V.R.p,I=V.ip,hz=V.R.hz;I.x=q.x;I.y=q.y;I.cx=V.cam.x;I.cy=V.cam.y;I.clk=V.R.clock;
+    if(hz){for(const d of hz.drops){d.px=d.x;d.py=d.y}for(const h of hz.hooks){h.px=h.x;h.py=h.y}for(const r of hz.runners){r.px=r.x;r.py=r.y}for(const w of hz.crows)if(w.hunt){w.px=w.x;w.py=w.y}}}
+  if(!V||V.paused)return;const R=V.R;
   for(const[i,a]of V.springAnim){if(a<=1)V.springAnim.delete(i);else V.springAnim.set(i,a-1)}
   for(let i=V.parts.length-1;i>=0;i--){const q=V.parts[i];q.x+=q.vx;q.y+=q.vy;q.vy+=q.g;q.vx*=.98;if(--q.life<=0)V.parts.splice(i,1)}
   if(V.shake>0){V.shake*=.85;if(V.shake<.3)V.shake=0}
@@ -1835,10 +1892,9 @@ function tick(){if(!V||V.paused)return;const R=V.R;
     return}
   if(R.won)return;
   let inp;
-  if(V.replay){const a=V.replay[Math.floor(V.rf/K)];V.rf++;const[d,hd]=a==null?[0,0]:ACTS[a];inp={dir:d,held:!!hd,pressed:!!hd&&!V.prevHeld};V.prevHeld=!!hd}
-  else{let dir=(input.kr?1:0)-(input.kl?1:0);if(!dir&&(input.tl||input.tr))dir=input.tv||(input.tr?1:-1);if(gLeft>0){if(!dir&&padPtrs.size===0){if(V.R.p.onGround)gLeft=0;else dir=gDir}if(gLeft>0)gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
+  {let dir=(input.kr?1:0)-(input.kl?1:0);if(!dir&&(input.tl||input.tr))dir=input.tv||(input.tr?1:-1);if(gLeft>0){if(!dir&&padPtrs.size===0){if(V.R.p.onGround)gLeft=0;else dir=gDir}if(gLeft>0)gLeft--}inp={dir,held:input.kj||input.tj,pressed:input.pressed};input.pressed=false}
   const g0=R.gems,c0=R.check,res=step(R,inp);
-  if(!V.replay){const lv=LEVELS[V.idx].code;
+  {const lv=LEVELS[V.idx].code;
     if(res==='dead'){V.att=(V.att||1)+1;LOG.add('death',{lv,why:R.lastDeath,tx:Math.floor((R.p.x+R.p.w/2)/TS),ty:Math.floor((R.p.y+R.p.h/2)/TS),vy:+R.p.vy.toFixed(1),heat:Math.round(100*Math.max(0,R.heat)/R.heatMax),clk:R.clock})}
     if(R.gems>g0)LOG.add('coal',{lv,n:R.gems+'/'+R.gemsTotal,clk:R.clock});
     if(R.check!==c0&&R.check)LOG.add('brazier',{lv,tx:R.check.x,clk:R.clock,deaths:R.deaths})}
@@ -1852,23 +1908,29 @@ function render(t){
   if(typeof Intro!=='undefined'&&Intro.active&&screen==='menu')return;
   if(screen==='play'&&V&&V.ending){if(Ending.draw(performance.now())===2)finishEnding();return}
   ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
-  const playing=screen==='play'&&V;let R,camX,camY,clock;
-  if(playing){R=V.R;camX=V.cam.x;clock=R.clock;camY=Math.max(0,Math.min(R.h-viewH,V.cam.y))}
-  else{R=attract;clock=Math.floor(t*60);camX=(Math.sin(t*.03-1.2)*.5+.5)*(R.w*TS-viewW);camY=R.h-viewH}
+  const playing=screen==='play'&&V;let R,camX,camY,clock,clockF;HZB=0;
+  if(playing){R=V.R;clock=R.clock;const a=lerpA,I=V.ip,mx=(u,v)=>a>=1||Math.abs(v-u)>48?v:u+(v-u)*a;// a jump of more than 48 px is a respawn: never slide across it
+    camX=mx(I.cx,V.cam.x);camY=Math.max(0,Math.min(R.h-viewH,mx(I.cy,V.cam.y)));
+    if(a<1){SPK=Object.assign(SPKO,R.p);SPK.x=mx(I.x,R.p.x);SPK.y=mx(I.y,R.p.y)}else SPK=R.p;
+    // hazards and sparks: only while the game is running, and only across an ordinary single step of the clock
+    if(a<1&&!V.paused)HZB=1-a;clockF=HZB&&clock-I.clk===1?clock-HZB:clock}
+  else{R=attract;clockF=clock=Math.floor(t*60);camX=(Math.sin(t*.03-1.2)*.5+.5)*(R.w*TS-viewW);camY=R.h-viewH}
   const th=THEMES[playing?LEVELS[V.idx].world:2];
-  const env={grid:R.grid,w:R.w,rows:R.rows,h:R.h,crumb:R.crumb,springAnim:playing?V.springAnim:null,check:R.check,t,clock};
+  const env={grid:R.grid,w:R.w,rows:R.rows,h:R.h,crumb:R.crumb,springAnim:playing?V.springAnim:null,check:R.check,t,clock,clockF};
   let sx=0,sy=0;if(playing&&V.shake>0){sx=(Math.random()-.5)*V.shake;sy=(Math.random()-.5)*V.shake}
-  {const vw=viewW;viewW=baseW;ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);drawBg(ctx,camX,t,th,clock,R.hasTimed);viewW=vw;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0)}
+  {const vw=viewW;viewW=baseW;ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);drawBg(ctx,camX,t,th,clockF,R.hasTimed);viewW=vw;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0)}
   ctx.save();const k=dpr*scale,ox=Math.round((-camX+sx)*k)/k,oy=Math.round((-camY+sy)*k)/k;ctx.translate(ox,oy);ctx.lineCap='butt';ctx.setLineDash([]);
   const x0=Math.floor(camX/TS)-2,x1=Math.ceil((camX+viewW)/TS)+2;const late=[];
   const ry0=Math.max(0,Math.floor(camY/TS)-1),ry1=Math.min(env.rows-1,Math.ceil((camY+viewH)/TS)+1);
-  for(let ty=ry0;ty<=ry1;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=env.w){drawWall(ctx,tx*TS,ty*TS,tx,ty,env.w);continue}
-    const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(c==='G'||c==='~'||c==='^'&&ty===env.rows-1){late.push([c,tx,ty]);continue}drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env)}
-  drawMovers(ctx,R.movers,clock,t);
+  if(!TC.off)drawTileCache(ctx,env,x0,x1,ry0,ry1,Math.round(ox*k),Math.round(oy*k),k);
+  for(let ty=ry0;ty<=ry1;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=env.w){if(TC.off)drawWall(ctx,tx*TS,ty*TS,tx,ty,env.w);continue}
+    const c=env.grid[ty*env.w+tx];if(c==='.')continue;if(tileLate(env,c,ty)){late.push([c,tx,ty]);continue}
+    const m=TC.off?0:tileMode(env,c,tx,ty);if(m!==1)drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env,m)}
+  drawMovers(ctx,R.movers,clockF,t);
   for(const[c,tx,ty]of late)drawTile(ctx,c,tx*TS,ty*TS,tx,ty,env);
-  drawHazards(ctx,R,clock,t);
+  drawHazards(ctx,R,clockF,t);
   INTRO_FX=null;if(playing&&V.intro){const I=V.intro,land=I.dur*.32,dr=introDrop(V);const W=introWave(V);INTRO_FX={drop:dr,front:W?W.front:-1e9,dark:W?Math.max(0,1-W.u*.85-W.back*.15):1,u:W?W.u:0}}
-  if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,INTRO_FX&&INTRO_FX.drop>0?Object.assign({},R.p,{y:R.p.y-INTRO_FX.drop,vy:10,sq:-.2}):R.p,t,R.heat/R.heatMax);
+  if(playing&&!R.p.dead&&!R.won)drawSpark(ctx,INTRO_FX&&INTRO_FX.drop>0?Object.assign({},SPK,{y:SPK.y-INTRO_FX.drop,vy:10,sq:-.2}):SPK,t,R.heat/R.heatMax);
   ctx.restore();
   drawDark(R,env,camX,sx,sy-camY,th,playing,t);
   if(playing){ctx.save();ctx.setTransform(dpr*baseScale,0,0,dpr*baseScale,0,0);const o=camX*1.35*zoom,W=baseW;ctx.fillStyle='rgba(4,2,1,.9)';
@@ -1876,14 +1938,19 @@ function render(t){
       for(let y=0;y<len;y+=9){ctx.fillRect(x-2,y,4,7)}ctx.beginPath();ctx.arc(x,len+5,6,0,Math.PI);ctx.lineWidth=3;ctx.strokeStyle='rgba(4,2,1,.9)';ctx.stroke()}ctx.restore()}
   if(playing){ctx.save();ctx.translate(ox,oy);
     if(INTRO_FX&&INTRO_FX.front>-1e8&&INTRO_FX.u<1){const f=INTRO_FX.front,a=.55*(1-INTRO_FX.u*.6),gr=ctx.createLinearGradient(f-90,0,f+14,0);gr.addColorStop(0,'rgba(255,106,26,0)');gr.addColorStop(.8,`rgba(255,150,60,${a})`);gr.addColorStop(1,`rgba(255,226,160,${a*1.2})`);ctx.fillStyle=gr;ctx.fillRect(f-90,0,104,VH)}
-    for(const q of V.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.c;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s)}ctx.globalAlpha=1;ctx.restore();
+    for(const q of V.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.c;ctx.fillRect(q.x-q.vx*HZB-q.s/2,q.y-q.vy*HZB-q.s/2,q.s,q.s)}ctx.globalAlpha=1;ctx.restore();
     if(V.flash&&V.flash.a>.01){ctx.fillStyle=`rgba(${V.flash.c},${V.flash.a})`;ctx.fillRect(-2,-2,viewW+4,VH+4)}
     setHud('hudDeaths',String(R.deaths));setHud('hudTime',fmtTime(R.clock));setHud('hudGems',R.gems+'/'+R.gemsTotal);
     const f=Math.max(0,R.heat/R.heatMax),hf=+(f.toFixed(3));if(hudCache.heat!==hf){hudCache.heat=hf;HEAT_EL.style.transform=`scaleX(${hf})`}const low=f<.25&&!R.p.dead;if(hudCache.low!==low){hudCache.low=low;HEAT_CHIP.classList.toggle('low',low)}}
 }
-let last=performance.now(),acc=0;
-function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;else if(Math.abs(dt-1/60)<.002)dt=1/60;else if(Math.abs(dt-1/120)<.0015)dt=1/120;else if(Math.abs(dt-1/30)<.003)dt=1/30;acc+=dt*(screen==='play'&&V&&V.slow>0?.45:1);
-  try{while(acc>=1/60){if(screen==='play')tick();acc-=1/60}render(now/1000)}catch(e){acc=0;if(!frame.errs||frame.errs<5){frame.errs=(frame.errs||0)+1;LOG.add('error',{msg:String(e&&e.message||e).slice(0,300),where:'frame',stack:e&&e.stack?String(e.stack).slice(0,600):undefined},true)}}
+let last=performance.now(),acc=0,dtAvg=1/60;
+// If the game fails on 30 frames in a row (half a second) it is not coming back: stop, and say so, rather than sit frozen.
+function showCrash(){try{Music.duck(true)}catch(e){}LOG.add('crash',{},true);if(document.getElementById('crash'))return;
+  document.getElementById('app').append(h('div',{id:'crash',role:'alertdialog','aria-label':'The game has stopped'},h('h3',{text:'The forge has seized up'}),
+    h('p',{text:'Something went wrong and the game cannot carry on. Your progress is saved. Reload to keep playing.'}),h('button',{class:'btn',onclick:()=>location.reload()},'Reload')))}
+function frame(now){let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;else if(Math.abs(dt-1/60)<.002)dt=1/60;else if(Math.abs(dt-1/120)<.0015)dt=1/120;else if(Math.abs(dt-1/30)<.003)dt=1/30;dtAvg+=(dt-dtAvg)*.05;acc+=dt*(screen==='play'&&V&&V.slow>0?.45:1);
+  try{while(acc>=1/60){if(screen==='play')tick();acc-=1/60}lerpA=dtAvg<.0135?Math.min(1,acc*60):1;render(now/1000);frame.bad=0}catch(e){acc=0;frame.bad=(frame.bad||0)+1;if(!frame.errs||frame.errs<5){frame.errs=(frame.errs||0)+1;LOG.add('error',{msg:String(e&&e.message||e).slice(0,300),where:'frame',stack:e&&e.stack?String(e.stack).slice(0,600):undefined},true)}
+    if(frame.bad>=30){showCrash();return}}
   if(screen==='play'&&V&&!V.paused&&!V.ending){const P=V.perf||(V.perf={n:0,sum:0,slow:0});P.n++;P.sum+=dt;if(dt>.034)P.slow++}
   requestAnimationFrame(frame)}
 
